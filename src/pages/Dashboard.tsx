@@ -5,6 +5,8 @@ import { PlanMixChart } from "@/components/dashboard/PlanMixChart";
 import { ChannelPerformanceChart } from "@/components/dashboard/ChannelPerformanceChart";
 import { RecentInvoicesTable } from "@/components/dashboard/RecentInvoicesTable";
 import { AtRiskCustomersTable } from "@/components/dashboard/AtRiskCustomersTable";
+import { AIInsightBanner } from "@/components/dashboard/AIInsightBanner";
+import { MiniMetricCards } from "@/components/dashboard/MiniMetricCard";
 
 export default function Dashboard() {
   return (
@@ -17,6 +19,9 @@ export default function Dashboard() {
             Key metrics and performance insights at a glance.
           </p>
         </div>
+
+        {/* AI Insight Banner */}
+        <AIInsightBanner />
 
         {/* KPI Ribbon */}
         <KPIRibbon />
@@ -31,16 +36,16 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Mini Metric Cards */}
+        <MiniMetricCards />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChannelPerformanceChart />
-          <div className="hidden lg:block" /> {/* Reserved space for future Growth Dynamics chart */}
-        </div>
-
-        {/* Tables Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RecentInvoicesTable />
           <AtRiskCustomersTable />
         </div>
+
+        {/* Invoices Table - Full Width */}
+        <RecentInvoicesTable />
       </div>
     </DashboardLayout>
   );

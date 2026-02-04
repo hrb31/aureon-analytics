@@ -6,13 +6,15 @@ interface ChartCardProps {
   children: React.ReactNode;
   isLoading?: boolean;
   className?: string;
+  action?: React.ReactNode;
 }
 
-export function ChartCard({ title, children, isLoading, className }: ChartCardProps) {
+export function ChartCard({ title, children, isLoading, className, action }: ChartCardProps) {
   return (
     <Card className={className}>
-      <CardHeader className="pb-2">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base font-medium">{title}</CardTitle>
+        {action}
       </CardHeader>
       <CardContent>
         {isLoading ? (
