@@ -1,64 +1,58 @@
-import { Button } from "@/components/ui/button";
-import { 
-  TrendingUp, 
-  AlertTriangle, 
-  BarChart3, 
-  Users, 
-  Calendar 
-} from "lucide-react";
+import { Sparkles, TrendingUp, AlertTriangle, BarChart3 } from "lucide-react";
 
 interface SuggestedPromptsProps {
   onSelect: (prompt: string) => void;
   disabled?: boolean;
 }
 
-const SUGGESTED_PROMPTS = [
+const QUICK_PROMPTS = [
   {
-    icon: TrendingUp,
-    label: "Summarize this period's performance",
+    label: "Performance summary",
     prompt: "Give me an executive summary of the current business performance, highlighting key wins and concerns.",
   },
   {
-    icon: BarChart3,
-    label: "What's driving revenue growth?",
+    label: "Revenue drivers",
     prompt: "Analyze the main drivers of revenue growth. Which plans and channels are contributing most?",
   },
   {
-    icon: AlertTriangle,
-    label: "Analyze churn risk factors",
-    prompt: "Identify the key churn risk factors and which customers are most at risk. What patterns do you see?",
+    label: "Churn risks",
+    prompt: "Identify the key churn risk factors and which customers are most at risk.",
   },
   {
-    icon: Users,
-    label: "Compare acquisition channels",
+    label: "Channel comparison",
     prompt: "Compare the performance of our acquisition channels. Which ones are most cost-effective?",
-  },
-  {
-    icon: Calendar,
-    label: "Forecast next quarter",
-    prompt: "Based on current trends, what's your forecast for next quarter's performance? What should we focus on?",
   },
 ];
 
 export function SuggestedPrompts({ onSelect, disabled }: SuggestedPromptsProps) {
   return (
-    <div className="space-y-3 p-4">
-      <p className="text-sm text-muted-foreground text-center">
-        Ask me anything about your business metrics, or try one of these:
+    <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+      {/* Welcome message */}
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-chart-1/20 to-chart-3/20 mb-4">
+        <Sparkles className="h-6 w-6 text-chart-1" />
+      </div>
+      
+      <h3 className="font-semibold text-lg mb-2">Hi! I'm your AI Analyst</h3>
+      
+      <p className="text-sm text-muted-foreground mb-6 max-w-[280px]">
+        Ask me anything about your metrics, revenue, customers, or trends. I have access to all your business data.
       </p>
-      <div className="space-y-2">
-        {SUGGESTED_PROMPTS.map((item) => (
-          <Button
-            key={item.label}
-            variant="outline"
-            className="w-full justify-start gap-3 h-auto py-3 px-4 text-left"
-            onClick={() => onSelect(item.prompt)}
-            disabled={disabled}
-          >
-            <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="text-sm">{item.label}</span>
-          </Button>
-        ))}
+
+      {/* Quick prompts as small chips */}
+      <div className="w-full space-y-2">
+        <p className="text-xs text-muted-foreground mb-2">Quick questions:</p>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {QUICK_PROMPTS.map((item) => (
+            <button
+              key={item.label}
+              onClick={() => onSelect(item.prompt)}
+              disabled={disabled}
+              className="px-3 py-1.5 text-xs rounded-full border border-border bg-muted/50 hover:bg-muted hover:border-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

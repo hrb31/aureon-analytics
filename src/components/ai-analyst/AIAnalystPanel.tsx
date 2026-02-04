@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Send, Trash2, Sparkles } from "lucide-react";
 import { useAIAnalyst } from "@/hooks/useAIAnalyst";
@@ -16,7 +15,7 @@ interface AIAnalystPanelProps {
 export function AIAnalystPanel({ className, onClose }: AIAnalystPanelProps) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { messages, sendMessage, clearMessages, isLoading } = useAIAnalyst();
 
   // Auto-scroll to bottom when messages change
@@ -26,11 +25,26 @@ export function AIAnalystPanel({ className, onClose }: AIAnalystPanelProps) {
     }
   }, [messages]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + "px";
+    }
+  }, [input]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !isLoading) {
       sendMessage(input);
       setInput("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
     }
   };
 
@@ -46,14 +60,14 @@ export function AIAnalystPanel({ className, onClose }: AIAnalystPanelProps) {
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-chart-1/20 to-chart-3/20">
             <Sparkles className="h-4 w-4 text-chart-1" />
           </div>
           <div>
             <h2 className="font-semibold text-sm">AI Analyst</h2>
-            <p className="text-xs text-muted-foreground">Powered by Lovable AI</p>
+            <p className="text-xs text-muted-foreground">Ask anything about your data</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -74,6 +88,7 @@ export function AIAnalystPanel({ className, onClose }: AIAnalystPanelProps) {
               size="icon"
               className="h-8 w-8"
               onClick={onClose}
+              aria-label="Close AI Analyst"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -81,7 +96,7 @@ export function AIAnalystPanel({ className, onClose }: AIAnalystPanelProps) {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages area */}
       <ScrollArea className="flex-1" ref={scrollRef}>
         {messages.length === 0 ? (
           <SuggestedPrompts onSelect={handlePromptSelect} disabled={isLoading} />
@@ -102,26 +117,37 @@ export function AIAnalystPanel({ className, onClose }: AIAnalystPanelProps) {
         )}
       </ScrollArea>
 
-      {/* Input */}
+      {/* Chat input - prominent and always visible */}
       <form
         onSubmit={handleSubmit}
-        className="flex items-center gap-2 p-4 border-t border-border"
+        className="shrink-0 p-4 border-t border-border bg-muted/30"
       >
-        <Input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about your metrics..."
-          disabled={isLoading}
-          className="flex-1"
-        />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={!input.trim() || isLoading}
-        >
-          <Send className="h-4 w-4" />
-        </Button>
+        <div className="flex items-end gap-2">
+          <div className="flex-1 relative">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about your metrics..."
+              disabled={isLoading}
+              rows={1}
+              className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-12"
+              style={{ minHeight: "42px", maxHeight: "120px" }}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!input.trim() || isLoading}
+              className="absolute right-1.5 bottom-1.5 h-8 w-8 rounded-md bg-gradient-to-r from-chart-1 to-chart-3 hover:opacity-90"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2 text-center">
+          Press Enter to send, Shift+Enter for new line
+        </p>
       </form>
     </div>
   );
