@@ -50,7 +50,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
           <AppSidebar />
-          <SidebarInset className="flex-1 flex flex-col">
+          <SidebarInset className="flex-1 flex flex-col min-w-0">
             <DashboardHeader />
             <main className="flex-1 p-6 overflow-auto">
               {children}
