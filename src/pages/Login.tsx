@@ -35,13 +35,12 @@ export default function Login() {
 
     setIsLoading(true);
 
-    const success = await login(password);
+    const result = await login(email, password);
 
-    if (success) {
+    if (result.success) {
       navigate("/");
     } else {
-      setError("Invalid credentials. Please try again.");
-      setPassword("");
+      setError(result.error || "Invalid credentials. Please try again.");
     }
 
     setIsLoading(false);
