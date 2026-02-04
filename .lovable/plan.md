@@ -1,228 +1,279 @@
 
+# Phase 5: Polish, New Pages, and Floating AI Chatbot
 
-# Phase 4 & 5: AI Analyst + Polish & Quality
+## Overview
 
-## Summary
-
-Implement the AI Analyst feature as a conversational sidebar/drawer that queries your Supabase data and provides consultancy-style analytics insights. Then add responsive design polish, accessibility improvements, and export functionality.
-
----
-
-## Phase 4: AI Analyst
-
-### Step 1: Edge Function for AI Chat
-
-**New File: `supabase/functions/ai-analyst/index.ts`**
-
-Create an edge function that:
-- Receives user questions about the data
-- Queries relevant Supabase views to get current metrics
-- Sends context + question to Lovable AI (google/gemini-3-flash-preview)
-- Streams responses back with consultancy-style formatting
-- Handles rate limits (429) and payment errors (402)
-
-**Update: `supabase/config.toml`**
-- Add `[functions.ai-analyst]` with `verify_jwt = false`
-
-**System Prompt Design:**
-```text
-You are an expert analytics consultant for Aureon Analytics, a SaaS metrics platform.
-You have access to real-time business data including:
-- Revenue metrics (MRR, ARR, total revenue)
-- Customer health scores and churn rates
-- Acquisition channel performance and CAC
-- Invoice and payment data
-
-When answering questions:
-1. Reference specific numbers from the provided data
-2. Identify drivers, risks, and implications
-3. Use consultancy-style reasoning
-4. Keep responses concise but insightful
-5. Highlight actionable recommendations when relevant
-```
+This plan covers three major areas:
+1. **AI Analyst Redesign**: Convert from sidebar panel to a floating chatbot bubble in the corner (like the reference image)
+2. **New Pages**: Revenue Deep Dive, Acquisition & CAC, and Customer Directory
+3. **Phase 5 Polish**: Responsive design, loading states, error handling, accessibility, export functionality
 
 ---
 
-### Step 2: AI Chat Context Provider
+## Part 1: AI Analyst Floating Chatbot Redesign
 
-**New File: `src/contexts/AIAnalystContext.tsx`**
+### Current State
+The AI Analyst currently opens as a sidebar panel on desktop and a drawer on mobile. Based on your feedback and the reference image, it should instead be a floating button in the bottom-right corner that opens a chat popup/drawer overlay.
 
-Create a context to manage:
-- Panel open/close state
-- Conversation history (messages array)
-- Loading state during streaming
-- Functions to send messages and clear history
+### Changes Required
 
----
+**Update: `src/components/ai-analyst/AIAnalystContainer.tsx`**
+- Remove the sticky sidebar approach
+- Render a floating button on both desktop and mobile
+- When clicked, open a floating chat popup (desktop) or full drawer (mobile)
 
-### Step 3: AI Analyst Hook
+**Update: `src/components/ai-analyst/AIAnalystDrawer.tsx`**
+- This component already has the floating button pattern - extend it to work for desktop too
+- Add a floating popup variant for desktop (positioned above the button)
 
-**New File: `src/hooks/useAIAnalyst.ts`**
-
-Implement streaming chat functionality:
-- `sendMessage(question: string)` - Sends question, streams response
-- SSE parsing for token-by-token rendering
-- Error handling for 429/402 with user-friendly toasts
-- Auto-fetch current metrics before first message
-
----
-
-### Step 4: AI Analyst Panel Component
-
-**New File: `src/components/ai-analyst/AIAnalystPanel.tsx`**
-
-Desktop persistent sidebar panel featuring:
-- Header with "AI Analyst" title and close button
-- Scrollable message history with markdown rendering
-- User messages (right-aligned) and assistant messages (left-aligned)
-- Suggested prompts section when empty:
-  - "Summarize this period's performance"
-  - "What's driving revenue growth?"
-  - "Analyze churn risk factors"
-  - "Compare acquisition channels"
-  - "Forecast Q4 growth"
-- Input field with send button
-- Loading indicator during streaming
-
----
-
-### Step 5: AI Analyst Mobile Drawer
-
-**New File: `src/components/ai-analyst/AIAnalystDrawer.tsx`**
-
-Mobile slide-out drawer using Sheet component:
-- Floating button (fixed bottom-right) to open
-- Uses same panel content as desktop
-- Smooth slide-in animation from right
-- Full-height drawer experience
-
----
-
-### Step 6: AI Analyst Container
-
-**New File: `src/components/ai-analyst/AIAnalystContainer.tsx`**
-
-Responsive wrapper that renders:
-- Desktop: Persistent sidebar panel (collapsible, ~400px wide)
-- Mobile: Floating button + Sheet drawer
-
-Uses `useIsMobile()` hook to determine which to render.
-
----
-
-### Step 7: Integrate into Dashboard Layout
+**New Component: `src/components/ai-analyst/AIAnalystPopup.tsx`**
+- Desktop floating chat window (similar to Intercom/Drift style)
+- Fixed position: bottom-right, above the floating button
+- Dimensions: ~400px wide, ~500px tall
+- Contains the same AIAnalystPanel content
+- Smooth scale-in animation when opening
 
 **Update: `src/components/dashboard/DashboardLayout.tsx`**
+- Remove the AI Analyst toggle button from the header
+- Remove the AIAnalystContainer from the layout structure
+- AI Analyst will now float independently
 
-Add the AI Analyst container to the layout:
-```
-SidebarProvider
-├── AppSidebar (left navigation)
-├── SidebarInset (main content)
-└── AIAnalystContainer (right panel/drawer)
-```
+**Update: `src/components/dashboard/AppSidebar.tsx`**
+- Keep the AI Analyst menu item for quick access
+- Clicking it will toggle the floating popup
 
-Add an AI button in the header to toggle the panel.
-
----
-
-### Step 8: Message Components
-
-**New File: `src/components/ai-analyst/ChatMessage.tsx`**
-
-Styled message bubbles:
-- User messages: Right-aligned, primary color background
-- Assistant messages: Left-aligned, muted background
-- Markdown rendering using react-markdown
-- Timestamp display
-- Typing indicator for streaming
+**Visual Design (from reference):**
+- Floating button: Gradient blue/purple, sparkles icon, bottom-right corner
+- Optional notification dot when insights are available
+- Popup has rounded corners, shadow, and smooth animations
 
 ---
 
-## Phase 5: Polish & Quality
+## Part 2: Customer Directory Page
 
-### Step 9: Responsive Design Improvements
+Based on the reference image, this page includes:
+
+### Page Header
+- Title: "Customer Directory"
+- Export CSV button
+
+### KPI Cards Row (3 cards)
+- **At-Risk Customers**: Count with percentage change vs last week
+- **High Value Clients**: Count with "new this month" indicator
+- **Churning (30D)**: Count with percentage change vs last month
+
+### Immediate Attention Required Section
+- Horizontal row of alert cards for critical customers
+- Each card shows: Customer name, plan, alert reason (e.g., "Health Score dropped by 20%", "Payment overdue 15 days", "Usage down by 40%")
+- Color-coded alert strips (red for critical, yellow for warning)
+- "View all alerts" link
+
+### Customer Table
+- Search input: "Search customers by name, ID or email..."
+- Filters: All Statuses dropdown, All Plans dropdown
+- Columns: Customer (avatar + name + email), Plan, Health Score (progress bar + percentage), Status (badge), Last Activity, Actions (three-dot menu)
+- Pagination: "Showing 1 to 10 of 150 customers" with page numbers
+
+### New Files
+
+**`src/pages/Customers.tsx`**
+- Main page component with all sections
+
+**`src/components/customers/CustomerKPICards.tsx`**
+- The three KPI cards for at-risk, high-value, and churning customers
+
+**`src/components/customers/ImmediateAttentionSection.tsx`**
+- The horizontal alert cards for customers needing attention
+
+**`src/components/customers/CustomerTable.tsx`**
+- Full-featured table with search, filters, and pagination
+
+**`src/components/customers/CustomerFilters.tsx`**
+- Search input and filter dropdowns
+
+**`src/components/customers/HealthScoreBar.tsx`**
+- Reusable health score progress bar component
+
+### New Data Hooks
+
+**Update: `src/hooks/useDashboardData.ts`**
+Add hooks for:
+- `useCustomerKPIs()` - Fetch at-risk count, high-value count, churning count
+- `useCustomersWithPagination(page, filters)` - Paginated customer list
+- `useImmediateAttentionCustomers()` - Customers with critical alerts
+
+---
+
+## Part 3: Revenue Deep Dive Page
+
+### Page Structure
+
+**Header**
+- Title: "Revenue Deep Dive"
+- Date range selector
+- Export button
+
+**KPI Row**
+- Total Revenue (with trend)
+- MRR (with trend)
+- ARR (with trend)
+- Net Revenue Retention
+
+**Main Charts**
+- Revenue Over Time (larger, more detailed version with multiple metrics)
+- Revenue by Plan breakdown (expanded pie/donut chart)
+- MRR Movement chart (new vs expansion vs contraction vs churn)
+
+**Invoice Analysis Table**
+- Full invoice list with more columns
+- Filter by status, date range, amount range
+
+### New Files
+
+**`src/pages/Revenue.tsx`**
+- Main revenue page
+
+**`src/components/revenue/RevenueKPICards.tsx`**
+- Revenue-specific KPI cards
+
+**`src/components/revenue/MRRMovementChart.tsx`**
+- Stacked bar chart showing MRR changes
+
+**`src/components/revenue/RevenueBreakdownChart.tsx`**
+- Detailed revenue breakdown by plan, segment
+
+---
+
+## Part 4: Acquisition & CAC Page
+
+### Page Structure
+
+**Header**
+- Title: "Acquisition & CAC"
+- Period selector
+
+**KPI Row**
+- Total Spend
+- Total Conversions
+- Average CAC
+- Best Performing Channel
+
+**Charts**
+- Spend vs Conversions Over Time (dual-axis chart)
+- Channel Performance Comparison (already exists - enhance)
+- CAC Trend by Channel
+- Conversion Funnel (leads → conversions)
+
+### New Files
+
+**`src/pages/Acquisition.tsx`**
+- Main acquisition page
+
+**`src/components/acquisition/AcquisitionKPICards.tsx`**
+- Acquisition-specific KPIs
+
+**`src/components/acquisition/SpendVsConversionsChart.tsx`**
+- Dual-axis trend chart
+
+**`src/components/acquisition/CACTrendChart.tsx`**
+- CAC over time by channel
+
+**`src/components/acquisition/ConversionFunnelChart.tsx`**
+- Funnel visualization
+
+---
+
+## Part 5: Phase 5 Polish & Quality
+
+### Responsive Design
 
 **Update: `src/components/dashboard/KPIRibbon.tsx`**
-- 2-column grid on mobile, 3-column on tablet, 6-column on desktop
-
-**Update: `src/components/dashboard/RecentInvoicesTable.tsx`**
-- Horizontal scroll wrapper on mobile
-- Optional: Card-based view for very small screens
+- Already has responsive grid - verify breakpoints work well
 
 **Update: `src/pages/Dashboard.tsx`**
-- Adjust padding and spacing for mobile
-- Stack charts vertically on mobile
+- Tighter padding on mobile (p-4 instead of p-6)
+- Better stacking for chart grid
 
-**Update: `src/components/dashboard/DashboardLayout.tsx`**
-- Add hamburger menu trigger visibility
-- Ensure header works well on mobile
+**Update: All table components**
+- Add horizontal scroll wrapper
+- Mobile-friendly card view option for very small screens
 
----
+### Loading States & Skeletons
 
-### Step 10: Loading States & Skeletons
-
-**Update: `src/components/dashboard/ChartCard.tsx`**
-- Add proper skeleton loader that matches chart dimensions
-- Smooth fade-in when data loads
-
-**New File: `src/components/ui/chart-skeleton.tsx`**
-- Animated chart placeholder (lines for line charts, bars for bar charts)
-
----
-
-### Step 11: Error Handling
-
-**New File: `src/components/ErrorBoundary.tsx`**
-- Catch rendering errors
-- Display friendly error message with retry button
-
-**Update: All chart/table components**
-- Add error state handling with "Failed to load" message
-- Retry button to refetch data
-
----
-
-### Step 12: Accessibility Improvements
-
-**Update: `src/index.css`**
-- Add focus-visible styles for keyboard navigation
-- Ensure minimum contrast ratios
-
-**Update: Interactive components**
-- Add proper aria-labels to icon-only buttons
-- Ensure all interactive elements are focusable
-- Add skip-to-content link
-
----
-
-### Step 13: Subtle Animations
-
-**Update: `src/index.css`**
-- Add transition utilities for hover states
-- Fade-in animation for cards on load
-
-**Update: Card components**
-- Subtle hover elevation effect
-- Smooth color transitions on status badges
-
----
-
-### Step 14: Export Functionality
-
-**New File: `src/lib/export.ts`**
-- `exportToCSV(data, filename)` utility function
-- Handle array of objects to CSV conversion
-- Trigger browser download
-
-**Update: `src/components/dashboard/RecentInvoicesTable.tsx`**
-- Already has Export CSV button - wire it up
-
-**Update: `src/components/dashboard/AtRiskCustomersTable.tsx`**
-- Add Export button to header
+**New: `src/components/ui/chart-skeleton.tsx`**
+- Animated skeleton that looks like chart placeholder
+- Variants for line chart, bar chart, pie chart
 
 **Update: Chart components**
-- Add "Export Data" option in chart headers
+- Use chart-specific skeletons instead of generic Skeleton
+
+### Error Handling
+
+**New: `src/components/ErrorBoundary.tsx`**
+- React error boundary with friendly fallback
+- Retry button
+
+**Update: All data components**
+- Consistent error state with retry functionality
+
+### Accessibility
+
+**Update: `src/index.css`**
+```css
+/* Focus visible styles */
+*:focus-visible {
+  @apply outline-2 outline-offset-2 outline-ring;
+}
+
+/* Skip to content link */
+.skip-link {
+  @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50;
+}
+```
+
+**Update: Icon-only buttons**
+- Add aria-label to all icon-only buttons
+- Ensure proper focus indicators
+
+### Export Functionality
+
+**New: `src/lib/export.ts`**
+```typescript
+export function exportToCSV<T extends Record<string, unknown>>(
+  data: T[],
+  filename: string,
+  columns?: { key: keyof T; label: string }[]
+): void
+```
+
+**Update: `src/components/dashboard/RecentInvoicesTable.tsx`**
+- Wire up the Export CSV button
+
+**Update: `src/components/customers/CustomerTable.tsx`**
+- Add export functionality
+
+### Animations & Micro-interactions
+
+**Update: `src/index.css`**
+- Add hover transitions for cards
+- Subtle scale effect on buttons
+- Smooth color transitions on badges
+
+---
+
+## Part 6: Routing Updates
+
+**Update: `src/App.tsx`**
+
+Add new routes:
+```tsx
+<Route path="/dashboard" element={<Dashboard />} />
+<Route path="/dashboard/revenue" element={<Revenue />} />
+<Route path="/dashboard/acquisition" element={<Acquisition />} />
+<Route path="/dashboard/customers" element={<Customers />} />
+```
+
+Each page will use `DashboardLayout` for consistent navigation.
 
 ---
 
@@ -232,84 +283,79 @@ Styled message bubbles:
 src/
 ├── components/
 │   ├── ai-analyst/
-│   │   ├── AIAnalystContainer.tsx
+│   │   ├── AIAnalystContainer.tsx (updated - floating only)
+│   │   ├── AIAnalystDrawer.tsx (updated)
+│   │   ├── AIAnalystPopup.tsx (new - desktop floating chat)
 │   │   ├── AIAnalystPanel.tsx
-│   │   ├── AIAnalystDrawer.tsx
 │   │   ├── ChatMessage.tsx
 │   │   └── SuggestedPrompts.tsx
-│   ├── dashboard/ (updated files)
+│   ├── customers/
+│   │   ├── CustomerKPICards.tsx
+│   │   ├── ImmediateAttentionSection.tsx
+│   │   ├── CustomerTable.tsx
+│   │   ├── CustomerFilters.tsx
+│   │   └── HealthScoreBar.tsx
+│   ├── revenue/
+│   │   ├── RevenueKPICards.tsx
+│   │   ├── MRRMovementChart.tsx
+│   │   └── RevenueBreakdownChart.tsx
+│   ├── acquisition/
+│   │   ├── AcquisitionKPICards.tsx
+│   │   ├── SpendVsConversionsChart.tsx
+│   │   ├── CACTrendChart.tsx
+│   │   └── ConversionFunnelChart.tsx
+│   ├── dashboard/ (existing + updates)
 │   ├── ErrorBoundary.tsx
 │   └── ui/
 │       └── chart-skeleton.tsx
-├── contexts/
-│   └── AIAnalystContext.tsx
 ├── hooks/
+│   ├── useDashboardData.ts (extended with new hooks)
 │   └── useAIAnalyst.ts
 ├── lib/
 │   └── export.ts
-└── pages/ (updated)
-
-supabase/functions/
-└── ai-analyst/
-    └── index.ts
-```
-
----
-
-## Technical Notes
-
-**AI Integration:**
-- Uses Lovable AI Gateway (LOVABLE_API_KEY already configured)
-- Default model: google/gemini-3-flash-preview
-- Streaming SSE for real-time response rendering
-- Context includes current KPI data from Supabase views
-
-**Responsive Breakpoints:**
-- Mobile: < 768px (useIsMobile hook)
-- Tablet: 768px - 1024px
-- Desktop: > 1024px
-
-**Dependencies:**
-- react-markdown (needs to be added for message rendering)
-
-**Error Handling:**
-- 429 errors: "Rate limit exceeded, please try again in a moment"
-- 402 errors: "Usage limit reached"
-- Network errors: Generic retry message
-
----
-
-## Data Flow for AI Analyst
-
-```text
-User Question
-     ↓
-Frontend (useAIAnalyst hook)
-     ↓
-Edge Function (ai-analyst)
-     ↓
-Query Supabase Views → Get current metrics
-     ↓
-Build context prompt with real data
-     ↓
-Call Lovable AI Gateway (streaming)
-     ↓
-Stream tokens back to frontend
-     ↓
-Render in ChatMessage with markdown
+└── pages/
+    ├── Dashboard.tsx
+    ├── Revenue.tsx (new)
+    ├── Acquisition.tsx (new)
+    ├── Customers.tsx (new)
+    └── ...
 ```
 
 ---
 
 ## Implementation Order
 
-1. Edge function for AI chat (backend first)
-2. AI context and hook (state management)
-3. AI panel and drawer components (UI)
-4. Integrate into dashboard layout
-5. Responsive design updates
-6. Loading states and error handling
-7. Accessibility improvements
-8. Export functionality
-9. Final polish and animations
+1. **AI Chatbot Redesign** - Convert sidebar to floating popup/drawer
+2. **Routing Setup** - Add routes for new pages
+3. **Customer Directory Page** - Most detailed page first (reference image)
+4. **Revenue Deep Dive Page** - Extended analytics
+5. **Acquisition & CAC Page** - Channel performance
+6. **Phase 5 Polish** - Export, accessibility, animations
+7. **Testing & Refinement** - Cross-browser, responsive testing
 
+---
+
+## Technical Notes
+
+**Floating AI Chatbot:**
+- Use `fixed` positioning with `z-50` to float above all content
+- Desktop popup: 400px wide, 500px tall, positioned bottom-right with margin
+- Mobile: Full-screen drawer (existing Sheet component)
+- Smooth animations using Tailwind's `animate-scale-in` or custom keyframes
+
+**Customer Table:**
+- Use `@tanstack/react-query` for pagination
+- Client-side filtering for status/plan (or server-side if data is large)
+- Health score bar: gradient from red (0%) → yellow (50%) → green (100%)
+
+**Export Utility:**
+- Convert data array to CSV string
+- Handle special characters and escaping
+- Trigger download with `Blob` and `URL.createObjectURL`
+
+**Database Views Used:**
+- `v_customer_health` - Extended for customer directory
+- `v_kpi_summary` - KPI cards
+- `v_revenue_over_time` - Revenue charts
+- `v_revenue_by_plan` - Plan breakdown
+- `v_acquisition_performance` - Channel metrics
