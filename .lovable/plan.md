@@ -1,159 +1,180 @@
 
 
-# Aureon Analytics - Implementation Plan
+# Phase 3: Overview Dashboard - Implementation Plan
 
-## Overview
-An enterprise-grade analytics dashboard MVP for **Aureon Analytics** featuring an Overview dashboard with AI Analyst, simple password authentication, and responsive light/dark theming.
+## Summary
 
----
-
-## Phase 1: Foundation & Access
-
-### Simple Password Gate
-- Clean branded login page matching your design reference
-- Single shared password to access the demo
-- "Aureon Analytics" branding with "Authorized Personnel Only" messaging
-- Password stored securely in environment variables
-- Session persistence so users don't re-enter password on refresh
-
-### Theme System
-- System preference detection on first visit
-- Manual toggle between light and dark modes
-- Both themes polished to enterprise standard
-- Smooth transitions between themes
+Transform the current placeholder dashboard into a fully functional analytics Overview page featuring a navigation sidebar, KPI ribbon, interactive charts, and data tables - all powered by the Supabase analytical views.
 
 ---
 
-## Phase 2: Database & Data Architecture
+## Implementation Steps
 
-### Supabase Schema
-Create the core analytics tables:
-- **customers** - Company profiles with health scores and status
-- **plans** - Starter, Pro, Enterprise tiers
-- **invoices** - Payment records with status tracking
-- **revenue_events** - Revenue movements (new, renewal, churn)
-- **acquisition_channels** - Marketing channels
-- **acquisition_metrics** - Spend and conversion data
-- **usage_metrics** - Customer activity tracking
+### Step 1: Dashboard Layout with Sidebar
 
-### Analytical Views
-Pre-computed views for dashboard performance:
-- **v_kpi_summary** - Revenue, MRR, ARR, active customers, churn rate, CAC
-- **v_revenue_over_time** - Time-series revenue data
-- **v_revenue_by_plan** - Revenue breakdown by plan type
-- **v_customer_health** - Customer health with risk levels
-- **v_acquisition_performance** - Channel efficiency metrics
+Create the main layout structure using shadcn's Sidebar components:
 
-### Synthetic Data Seeding
-- 150+ realistic fake customers across industries
-- 12 months of invoice history
-- Varied health scores and statuses
-- Marketing spend across multiple channels
-- Realistic patterns (growth trends, seasonal variation, some churn)
+**New Files:**
+- `src/components/dashboard/AppSidebar.tsx` - Navigation sidebar component
+- `src/components/dashboard/DashboardLayout.tsx` - Layout wrapper with SidebarProvider
+
+**Sidebar Features:**
+- Aureon Analytics branding with logo at top
+- Navigation menu: Overview (active), Revenue, Acquisition, Customers
+- Settings section at bottom
+- Theme toggle and logout in footer
+- Collapsible design (icon mode on collapse, sheet on mobile)
 
 ---
 
-## Phase 3: Overview Dashboard
+### Step 2: KPI Ribbon
 
-### Navigation Sidebar
-- Aureon Analytics branding with logo
-- Navigation items: Overview, Revenue, Acquisition, Customers
-- Settings and Administration section
-- User profile display at bottom
-- Collapsible on mobile
+Create the metrics ribbon displaying key business indicators:
 
-### KPI Ribbon
-Top-level metrics with trend indicators:
-- Total Revenue with % change
-- MRR (Monthly Recurring Revenue)
-- ARR (Annual Recurring Revenue)
-- Active Customers
-- Churn Rate
-- New vs Churned
-- CAC
+**New Files:**
+- `src/components/dashboard/KPICard.tsx` - Reusable KPI card component
+- `src/components/dashboard/KPIRibbon.tsx` - Container with all KPIs
 
-### Dashboard Visualizations
-- **Revenue Trends** - Line chart showing monthly performance
-- **Growth Dynamics** - Bar chart comparing new vs churned customers
-- **Plan Mix** - Donut chart showing customer distribution by plan
-- **Channel Performance** - Horizontal bar chart of revenue by acquisition source
+**Metrics to Display (from v_kpi_summary):**
+- Total Revenue ($141,867)
+- MRR ($12,665)
+- ARR ($151,980)
+- Active Customers (105)
+- Churn Rate (6%)
+- CAC ($322.87)
 
-### Data Tables
-- Recent invoices with status badges
-- At-risk customers highlighted
-
-### Filters
-- Date range selector (Last 30 Days, Q3, YTD)
-- Plan filter
-- Channel filter
-- Region/Country filter
+Each card will show:
+- Metric label
+- Current value (formatted appropriately)
+- Trend indicator placeholder (for future period-over-period comparison)
 
 ---
 
-## Phase 4: AI Analyst
+### Step 3: Data Hooks
 
-### Lovable AI Integration
-- Edge function calling Lovable AI Gateway
-- System prompt tuned for consultancy-style analytics insights
-- Queries the Supabase analytical views for grounded responses
+Create React Query hooks for fetching dashboard data:
 
-### UI Behavior
-- **Desktop**: Persistent sidebar panel on the right
-- **Mobile**: Floating button that opens a slide-out drawer
-- Smooth open/close animations
+**New File:**
+- `src/hooks/useDashboardData.ts`
 
-### Conversation Features
-- Natural language questions about the data
-- Suggested prompts ("Summarize this period", "Analyze churn spikes", "Growth forecast for Q4")
-- Consultancy-tone responses (drivers, risks, implications)
-- Monthly summary auto-generated on panel open
-
-### AI Capabilities
-- Answer questions about revenue, acquisition, customer health
-- Explain trends and anomalies
-- Identify risks (high churn, CAC spikes)
-- Provide period-over-period comparisons
-- Executive-style summaries
+**Hooks:**
+- `useKPISummary()` - Fetches v_kpi_summary
+- `useRevenueOverTime()` - Fetches v_revenue_over_time (12 months)
+- `useRevenueByPlan()` - Fetches v_revenue_by_plan
+- `useAcquisitionPerformance()` - Fetches v_acquisition_performance
+- `useRecentInvoices()` - Fetches recent invoices with customer data
+- `useAtRiskCustomers()` - Fetches customers with low health scores
 
 ---
 
-## Phase 5: Polish & Quality
+### Step 4: Dashboard Charts
 
-### Responsive Design
-- Desktop-first with tablet and mobile breakpoints
-- Navigation collapses to hamburger menu on mobile
-- Charts resize appropriately
-- Tables become scrollable cards on small screens
+Build the visualization section using Recharts:
 
-### Enterprise Polish
-- Consistent spacing and typography
-- Proper loading states and skeleton screens
-- Error handling with graceful fallbacks
-- Subtle animations and micro-interactions
-- Accessibility compliance (contrast, focus states)
+**New Files:**
+- `src/components/dashboard/RevenueChart.tsx` - Line chart for monthly revenue trends
+- `src/components/dashboard/PlanMixChart.tsx` - Donut/pie chart for revenue by plan
+- `src/components/dashboard/ChannelPerformanceChart.tsx` - Horizontal bar chart for acquisition channels
+- `src/components/dashboard/ChartCard.tsx` - Wrapper component with title and loading states
 
-### Export Functionality
-- Export data buttons (CSV format)
-- Filter segments option on charts
+**Chart Layout:**
+- Top row: Revenue Trends (full width or 2/3) + Plan Mix (1/3)
+- Bottom row: Channel Performance (half) + reserved space for Growth Dynamics
 
 ---
 
-## Future Phases (After MVP)
+### Step 5: Data Tables
 
-These pages are documented for later expansion:
+Create the tables section for detailed data:
 
-1. **Revenue Deep Dive** - Detailed revenue analysis, invoice breakdown, refunds tracking
-2. **Acquisition & CAC** - Spend vs acquisition trends, channel efficiency, optimization insights
-3. **Customer Directory** - Full customer list with health scores, drill-down capability, at-risk alerts
-4. **Settings** - Theme preferences, notification settings
+**New Files:**
+- `src/components/dashboard/RecentInvoicesTable.tsx` - Recent invoices with status badges
+- `src/components/dashboard/AtRiskCustomersTable.tsx` - Customers with low health scores
+
+**Table Features:**
+- Status badges (paid = green, pending = yellow, overdue = red)
+- Company name, amount, date columns
+- At-risk highlighting for low health scores
+- Responsive: becomes scrollable on mobile
 
 ---
 
-## Technical Approach
+### Step 6: Dashboard Overview Page
 
-- **Frontend**: React + TypeScript + Tailwind CSS + shadcn/ui components
-- **Charts**: Recharts (already installed)
-- **Backend**: Supabase PostgreSQL with analytical views
-- **AI**: OpenAI API via Supabase Edge Function
-- **Auth**: Simple password check via Edge Function
+Update the main Dashboard page to compose all components:
+
+**Modified File:**
+- `src/pages/Dashboard.tsx`
+
+**Structure:**
+```
+DashboardLayout (SidebarProvider)
+├── AppSidebar
+└── Main Content
+    ├── Page Header ("Overview")
+    ├── KPIRibbon
+    ├── Charts Grid
+    │   ├── RevenueChart
+    │   ├── PlanMixChart
+    │   └── ChannelPerformanceChart
+    └── Tables Section
+        ├── RecentInvoicesTable
+        └── AtRiskCustomersTable
+```
+
+---
+
+### Step 7: Loading & Error States
+
+Add polish with proper loading states:
+
+**Components:**
+- Skeleton loaders for KPI cards
+- Chart placeholder skeletons
+- Table loading states
+- Error boundaries with retry buttons
+
+---
+
+## File Structure After Implementation
+
+```
+src/
+├── components/
+│   └── dashboard/
+│       ├── AppSidebar.tsx
+│       ├── DashboardLayout.tsx
+│       ├── KPICard.tsx
+│       ├── KPIRibbon.tsx
+│       ├── ChartCard.tsx
+│       ├── RevenueChart.tsx
+│       ├── PlanMixChart.tsx
+│       ├── ChannelPerformanceChart.tsx
+│       ├── RecentInvoicesTable.tsx
+│       └── AtRiskCustomersTable.tsx
+├── hooks/
+│   └── useDashboardData.ts
+└── pages/
+    └── Dashboard.tsx (updated)
+```
+
+---
+
+## Technical Notes
+
+- **Charts**: Using Recharts (already installed) with ResponsiveContainer for proper sizing
+- **Data Fetching**: React Query with automatic caching and refetch on window focus
+- **Formatting**: Currency amounts with Intl.NumberFormat, percentages with 1 decimal
+- **Responsive**: Grid layout collapses to single column on mobile
+- **Theme**: All charts will respect light/dark mode using CSS variables
+
+---
+
+## Not Included in This Phase
+
+The following will be addressed in later phases:
+- Filters (date range, plan, channel) - Phase 3 extension or Phase 5
+- AI Analyst panel - Phase 4
+- Export functionality - Phase 5
+- Revenue, Acquisition, and Customer detail pages - Future phases
 
