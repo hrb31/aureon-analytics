@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail, LogIn, Shield } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,9 +53,7 @@ export default function Login() {
       <header className="w-full border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">A</span>
-            </div>
+            <img src={logo} alt="Aureon Analytics" className="h-10 w-10" />
             <span className="font-semibold text-xl text-foreground">Aureon Analytics</span>
           </div>
           <div className="flex items-center gap-4">
