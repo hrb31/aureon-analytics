@@ -1,6 +1,14 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { ChartCard } from "./ChartCard";
 import { useAcquisitionPerformance } from "@/hooks/useDashboardData";
+
+const CHANNEL_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
 
 export function ChannelPerformanceChart() {
   const { data, isLoading, error } = useAcquisitionPerformance();
@@ -66,11 +74,11 @@ export function ChannelPerformanceChart() {
                 ];
               }}
             />
-            <Bar
-              dataKey="conversions"
-              fill="hsl(var(--primary))"
-              radius={[0, 4, 4, 0]}
-            />
+            <Bar dataKey="conversions" radius={[0, 4, 4, 0]}>
+              {chartData.map((_, index) => (
+                <Cell key={`cell-${index}`} fill={CHANNEL_COLORS[index % CHANNEL_COLORS.length]} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { TrendingDown, TrendingUp } from "lucide-react";
+import { usePaymentMetrics } from "@/hooks/usePaymentMetrics";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MiniMetricCardProps {
   label: string;
@@ -62,35 +64,48 @@ export function MiniMetricCard({
   );
 }
 
-// Sample data for demo
-const refundData = [
-  { value: 2.1 }, { value: 1.8 }, { value: 2.3 }, { value: 1.9 }, 
-  { value: 1.5 }, { value: 1.2 }, { value: 1.0 }
-];
-
-const failedData = [
-  { value: 0.5 }, { value: 0.8 }, { value: 0.6 }, { value: 1.0 }, 
-  { value: 1.2 }, { value: 1.5 }, { value: 1.8 }
-];
-
 export function MiniMetricCards() {
+  const { data, isLoading } = usePaymentMetrics();
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <Skeleton className="h-4 w-24 mb-2" />
+            <Skeleton className="h-8 w-16" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <Skeleton className="h-4 w-24 mb-2" />
+            <Skeleton className="h-8 w-16" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const refundTrendPrefix = data?.refundTrend && data.refundTrend <= 0 ? "" : "+";
+  const failedTrendPrefix = data?.failedTrend && data.failedTrend <= 0 ? "" : "+";
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <MiniMetricCard
         label="Refund Rate"
-        value="1.0%"
-        trend="down"
-        trendValue="-0.5%"
-        data={refundData}
-        color="success"
+        value={`${data?.refundRate ?? 0}%`}
+        trend={data?.trendDirection?.refund ?? "down"}
+        trendValue={`${refundTrendPrefix}${data?.refundTrend ?? 0}%`}
+        data={data?.refundSparkline ?? []}
+        color={data?.trendDirection?.refund === "down" ? "success" : "destructive"}
       />
       <MiniMetricCard
         label="Failed Payments"
-        value="1.8%"
-        trend="up"
-        trendValue="+0.3%"
-        data={failedData}
-        color="destructive"
+        value={`${data?.failedRate ?? 0}%`}
+        trend={data?.trendDirection?.failed ?? "up"}
+        trendValue={`${failedTrendPrefix}${data?.failedTrend ?? 0}%`}
+        data={data?.failedSparkline ?? []}
+        color={data?.trendDirection?.failed === "up" ? "destructive" : "success"}
       />
     </div>
   );
