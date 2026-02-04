@@ -3,7 +3,7 @@ import { AppSidebar } from "./AppSidebar";
 import { AIAnalystContainer } from "@/components/ai-analyst/AIAnalystContainer";
 import { AIAnalystProvider } from "@/contexts/AIAnalystContext";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { Sparkles, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useAIAnalystContext } from "@/contexts/AIAnalystContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -19,16 +19,24 @@ function DashboardHeader() {
     <header className="flex h-14 items-center justify-between gap-4 border-b border-border bg-background px-6">
       <SidebarTrigger className="-ml-2" />
       
-      {/* AI Analyst toggle button - only show on desktop */}
+      {/* AI Analyst toggle button - prominent gradient style on desktop */}
       {!isMobile && (
         <Button
-          variant={isOpen ? "secondary" : "outline"}
-          size="sm"
           onClick={() => setIsOpen(!isOpen)}
-          className="gap-2"
+          className={
+            isOpen
+              ? "gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              : "gap-2 bg-gradient-to-r from-chart-1 to-chart-3 text-white hover:opacity-90 shadow-md"
+          }
+          size="sm"
         >
           <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">AI Analyst</span>
+          <span>AI Analyst</span>
+          {isOpen ? (
+            <PanelRightClose className="h-4 w-4 ml-1" />
+          ) : (
+            <PanelRightOpen className="h-4 w-4 ml-1" />
+          )}
         </Button>
       )}
     </header>

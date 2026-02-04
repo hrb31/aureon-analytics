@@ -1,8 +1,9 @@
-import { LayoutDashboard, DollarSign, Users, TrendingUp, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, DollarSign, Users, TrendingUp, Settings, LogOut, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAIAnalystContext } from "@/contexts/AIAnalystContext";
 import logo from "@/assets/logo.png";
 
 import {
@@ -37,6 +38,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { logout } = useAuth();
   const currentPath = location.pathname;
+  const { isOpen, setIsOpen } = useAIAnalystContext();
 
   const isActive = (path: string) => {
     if (path === "/dashboard") {
@@ -82,6 +84,32 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* AI Analyst Section */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Intelligence</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={isOpen}
+                  tooltip="AI Analyst"
+                  onClick={() => setIsOpen(!isOpen)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="flex h-4 w-4 items-center justify-center">
+                      <Sparkles className="h-4 w-4 text-chart-1" />
+                    </div>
+                    <span className="bg-gradient-to-r from-chart-1 to-chart-3 bg-clip-text text-transparent font-medium">
+                      AI Analyst
+                    </span>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
