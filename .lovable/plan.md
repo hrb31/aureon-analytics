@@ -1,192 +1,315 @@
 
 
-# Dashboard Visual Redesign - Matching Reference Design
+# Phase 4 & 5: AI Analyst + Polish & Quality
 
 ## Summary
 
-Transform the current dashboard to match the reference design with a more colorful, polished appearance. The reference shows a dark-themed enterprise analytics dashboard with vibrant accent colors, gradient effects, progress bars, colored status badges, an AI Insights banner, and mini sparkline charts.
+Implement the AI Analyst feature as a conversational sidebar/drawer that queries your Supabase data and provides consultancy-style analytics insights. Then add responsive design polish, accessibility improvements, and export functionality.
 
 ---
 
-## Key Visual Changes
+## Phase 4: AI Analyst
 
-### Color Enhancements
-- Add new chart colors: teal/cyan (`#22d3ee`), emerald green (`#10b981`), violet/purple (`#8b5cf6`), amber (`#f59e0b`), rose (`#f43f5e`)
-- Update CSS variables with dedicated chart colors for both light and dark modes
-- Add gradient backgrounds for key UI elements
+### Step 1: Edge Function for AI Chat
 
-### Component Enhancements
-- Revenue chart with gradient fill under the line (cyan/teal color)
-- Plan Mix section with colored horizontal progress bars instead of pie chart
-- Sidebar with colored active state backgrounds
-- Status badges with distinct color-coded backgrounds (green=paid, yellow=pending, red=overdue)
-- Plan badges in invoice table (e.g., ENTERPRISE, PRO TIER, STARTER)
-- AI Insights banner at the top of the dashboard
-- Mini metric cards with sparkline charts (Refund Rate, Failed Rate)
+**New File: `supabase/functions/ai-analyst/index.ts`**
 
----
+Create an edge function that:
+- Receives user questions about the data
+- Queries relevant Supabase views to get current metrics
+- Sends context + question to Lovable AI (google/gemini-3-flash-preview)
+- Streams responses back with consultancy-style formatting
+- Handles rate limits (429) and payment errors (402)
 
-## Implementation Steps
+**Update: `supabase/config.toml`**
+- Add `[functions.ai-analyst]` with `verify_jwt = false`
 
-### Step 1: Update CSS Design System
+**System Prompt Design:**
+```text
+You are an expert analytics consultant for Aureon Analytics, a SaaS metrics platform.
+You have access to real-time business data including:
+- Revenue metrics (MRR, ARR, total revenue)
+- Customer health scores and churn rates
+- Acquisition channel performance and CAC
+- Invoice and payment data
 
-**File: `src/index.css`**
-
-Add chart color variables for consistent theming across all visualizations:
-
-```css
-:root {
-  /* Existing variables... */
-  
-  /* Chart Colors */
-  --chart-1: 199 89% 48%;    /* Cyan/Teal - primary chart */
-  --chart-2: 160 84% 39%;    /* Emerald Green */
-  --chart-3: 262 83% 58%;    /* Violet/Purple */
-  --chart-4: 38 92% 50%;     /* Amber/Yellow */
-  --chart-5: 349 89% 60%;    /* Rose/Pink */
-  
-  /* Status Colors */
-  --success: 160 84% 39%;
-  --success-foreground: 0 0% 100%;
-  --warning: 38 92% 50%;
-  --warning-foreground: 0 0% 0%;
-}
-```
-
-Dark mode will have slightly adjusted values for proper contrast.
-
----
-
-### Step 2: Enhanced Sidebar with Colored Active States
-
-**File: `src/components/dashboard/AppSidebar.tsx`**
-
-- Add colored background for active navigation items (blue/purple tint)
-- Add an "AI Insights" button at the bottom with gradient background
-- Update icon colors to match active/inactive states
-
----
-
-### Step 3: AI Insights Banner Component
-
-**New File: `src/components/dashboard/AIInsightBanner.tsx`**
-
-Create a dismissible insight banner matching the reference:
-- Blue/teal left border or icon background
-- "AI Insight" label with robot/sparkle icon
-- Dynamic insight text about revenue trends
-- "View detailed anomaly report" link
-- Dismiss (X) button
-
----
-
-### Step 4: Enhanced KPI Cards
-
-**File: `src/components/dashboard/KPICard.tsx`**
-
-- Add subtle colored icon backgrounds based on metric type
-- Add trend indicators with colored arrows (green up, red down)
-- Optional: mini sparkline in the background
-
----
-
-### Step 5: Revenue Chart with Gradient Fill
-
-**File: `src/components/dashboard/RevenueChart.tsx`**
-
-- Change line color to cyan/teal (`hsl(var(--chart-1))`)
-- Add gradient fill under the line using Recharts' `<defs>` and `<linearGradient>`
-- Add period toggle buttons (Daily/Weekly/Monthly) - UI only for now
-- Display total value with percentage change indicator
-
----
-
-### Step 6: Revenue by Plan with Progress Bars
-
-**File: `src/components/dashboard/PlanMixChart.tsx`**
-
-Transform from donut chart to a list with progress bars:
-- Each plan shows: colored dot, plan name, revenue amount
-- Horizontal progress bar showing percentage of total
-- Colors: Blue for Enterprise, Green for Pro, Purple for Starter
-
----
-
-### Step 7: Mini Metric Cards with Sparklines
-
-**New File: `src/components/dashboard/MiniMetricCard.tsx`**
-
-Create small metric cards with mini charts:
-- Refund Rate with mini line chart (green if trending down)
-- Failed Rate with mini line chart (red if trending up)
-- Compact layout: label, value, trend, sparkline
-
----
-
-### Step 8: Enhanced Invoice Table
-
-**File: `src/components/dashboard/RecentInvoicesTable.tsx`**
-
-- Add Invoice ID column (#INV-XXXXX format)
-- Add client avatar initials with colored background
-- Add Plan column with colored badges (ENTERPRISE=blue, PRO TIER=green, STARTER=purple)
-- Update status badges with distinct colors and dot indicators
-- Add actions column with "..." menu
-- Add "Export CSV" button in header
-- Show total count badge
-
----
-
-### Step 9: Update Dashboard Page Layout
-
-**File: `src/pages/Dashboard.tsx`**
-
-Restructure to match reference layout:
-```
-- AI Insight Banner
-- Revenue Trend (large) + Revenue by Plan (sidebar)
-- Mini Metric Cards (Refund Rate, Failed Rate)
-- Detailed Invoices Table (full width)
+When answering questions:
+1. Reference specific numbers from the provided data
+2. Identify drivers, risks, and implications
+3. Use consultancy-style reasoning
+4. Keep responses concise but insightful
+5. Highlight actionable recommendations when relevant
 ```
 
 ---
 
-## Updated File Structure
+### Step 2: AI Chat Context Provider
 
+**New File: `src/contexts/AIAnalystContext.tsx`**
+
+Create a context to manage:
+- Panel open/close state
+- Conversation history (messages array)
+- Loading state during streaming
+- Functions to send messages and clear history
+
+---
+
+### Step 3: AI Analyst Hook
+
+**New File: `src/hooks/useAIAnalyst.ts`**
+
+Implement streaming chat functionality:
+- `sendMessage(question: string)` - Sends question, streams response
+- SSE parsing for token-by-token rendering
+- Error handling for 429/402 with user-friendly toasts
+- Auto-fetch current metrics before first message
+
+---
+
+### Step 4: AI Analyst Panel Component
+
+**New File: `src/components/ai-analyst/AIAnalystPanel.tsx`**
+
+Desktop persistent sidebar panel featuring:
+- Header with "AI Analyst" title and close button
+- Scrollable message history with markdown rendering
+- User messages (right-aligned) and assistant messages (left-aligned)
+- Suggested prompts section when empty:
+  - "Summarize this period's performance"
+  - "What's driving revenue growth?"
+  - "Analyze churn risk factors"
+  - "Compare acquisition channels"
+  - "Forecast Q4 growth"
+- Input field with send button
+- Loading indicator during streaming
+
+---
+
+### Step 5: AI Analyst Mobile Drawer
+
+**New File: `src/components/ai-analyst/AIAnalystDrawer.tsx`**
+
+Mobile slide-out drawer using Sheet component:
+- Floating button (fixed bottom-right) to open
+- Uses same panel content as desktop
+- Smooth slide-in animation from right
+- Full-height drawer experience
+
+---
+
+### Step 6: AI Analyst Container
+
+**New File: `src/components/ai-analyst/AIAnalystContainer.tsx`**
+
+Responsive wrapper that renders:
+- Desktop: Persistent sidebar panel (collapsible, ~400px wide)
+- Mobile: Floating button + Sheet drawer
+
+Uses `useIsMobile()` hook to determine which to render.
+
+---
+
+### Step 7: Integrate into Dashboard Layout
+
+**Update: `src/components/dashboard/DashboardLayout.tsx`**
+
+Add the AI Analyst container to the layout:
 ```
+SidebarProvider
+├── AppSidebar (left navigation)
+├── SidebarInset (main content)
+└── AIAnalystContainer (right panel/drawer)
+```
+
+Add an AI button in the header to toggle the panel.
+
+---
+
+### Step 8: Message Components
+
+**New File: `src/components/ai-analyst/ChatMessage.tsx`**
+
+Styled message bubbles:
+- User messages: Right-aligned, primary color background
+- Assistant messages: Left-aligned, muted background
+- Markdown rendering using react-markdown
+- Timestamp display
+- Typing indicator for streaming
+
+---
+
+## Phase 5: Polish & Quality
+
+### Step 9: Responsive Design Improvements
+
+**Update: `src/components/dashboard/KPIRibbon.tsx`**
+- 2-column grid on mobile, 3-column on tablet, 6-column on desktop
+
+**Update: `src/components/dashboard/RecentInvoicesTable.tsx`**
+- Horizontal scroll wrapper on mobile
+- Optional: Card-based view for very small screens
+
+**Update: `src/pages/Dashboard.tsx`**
+- Adjust padding and spacing for mobile
+- Stack charts vertically on mobile
+
+**Update: `src/components/dashboard/DashboardLayout.tsx`**
+- Add hamburger menu trigger visibility
+- Ensure header works well on mobile
+
+---
+
+### Step 10: Loading States & Skeletons
+
+**Update: `src/components/dashboard/ChartCard.tsx`**
+- Add proper skeleton loader that matches chart dimensions
+- Smooth fade-in when data loads
+
+**New File: `src/components/ui/chart-skeleton.tsx`**
+- Animated chart placeholder (lines for line charts, bars for bar charts)
+
+---
+
+### Step 11: Error Handling
+
+**New File: `src/components/ErrorBoundary.tsx`**
+- Catch rendering errors
+- Display friendly error message with retry button
+
+**Update: All chart/table components**
+- Add error state handling with "Failed to load" message
+- Retry button to refetch data
+
+---
+
+### Step 12: Accessibility Improvements
+
+**Update: `src/index.css`**
+- Add focus-visible styles for keyboard navigation
+- Ensure minimum contrast ratios
+
+**Update: Interactive components**
+- Add proper aria-labels to icon-only buttons
+- Ensure all interactive elements are focusable
+- Add skip-to-content link
+
+---
+
+### Step 13: Subtle Animations
+
+**Update: `src/index.css`**
+- Add transition utilities for hover states
+- Fade-in animation for cards on load
+
+**Update: Card components**
+- Subtle hover elevation effect
+- Smooth color transitions on status badges
+
+---
+
+### Step 14: Export Functionality
+
+**New File: `src/lib/export.ts`**
+- `exportToCSV(data, filename)` utility function
+- Handle array of objects to CSV conversion
+- Trigger browser download
+
+**Update: `src/components/dashboard/RecentInvoicesTable.tsx`**
+- Already has Export CSV button - wire it up
+
+**Update: `src/components/dashboard/AtRiskCustomersTable.tsx`**
+- Add Export button to header
+
+**Update: Chart components**
+- Add "Export Data" option in chart headers
+
+---
+
+## New File Structure
+
+```text
 src/
-├── index.css (updated with chart colors)
 ├── components/
-│   └── dashboard/
-│       ├── AppSidebar.tsx (colored active states, AI button)
-│       ├── AIInsightBanner.tsx (new)
-│       ├── KPICard.tsx (enhanced with colors)
-│       ├── RevenueChart.tsx (gradient fill, period toggle)
-│       ├── PlanMixChart.tsx (progress bars instead of pie)
-│       ├── MiniMetricCard.tsx (new - sparklines)
-│       ├── RecentInvoicesTable.tsx (enhanced with plan badges)
-│       └── ...
-└── pages/
-    └── Dashboard.tsx (updated layout)
+│   ├── ai-analyst/
+│   │   ├── AIAnalystContainer.tsx
+│   │   ├── AIAnalystPanel.tsx
+│   │   ├── AIAnalystDrawer.tsx
+│   │   ├── ChatMessage.tsx
+│   │   └── SuggestedPrompts.tsx
+│   ├── dashboard/ (updated files)
+│   ├── ErrorBoundary.tsx
+│   └── ui/
+│       └── chart-skeleton.tsx
+├── contexts/
+│   └── AIAnalystContext.tsx
+├── hooks/
+│   └── useAIAnalyst.ts
+├── lib/
+│   └── export.ts
+└── pages/ (updated)
+
+supabase/functions/
+└── ai-analyst/
+    └── index.ts
 ```
 
 ---
 
 ## Technical Notes
 
-- **Color System**: All new colors defined as HSL CSS variables for theme consistency
-- **Gradients**: Using CSS gradients and SVG gradients for chart fills
-- **Recharts Customization**: Using `<defs>` for gradient definitions in charts
-- **Sparklines**: Using Recharts `<LineChart>` in a compact configuration
-- **Badges**: Extended shadcn Badge component with new color variants (success, warning, info, purple)
-- **Progress Bars**: Using shadcn Progress component with custom colors
+**AI Integration:**
+- Uses Lovable AI Gateway (LOVABLE_API_KEY already configured)
+- Default model: google/gemini-3-flash-preview
+- Streaming SSE for real-time response rendering
+- Context includes current KPI data from Supabase views
+
+**Responsive Breakpoints:**
+- Mobile: < 768px (useIsMobile hook)
+- Tablet: 768px - 1024px
+- Desktop: > 1024px
+
+**Dependencies:**
+- react-markdown (needs to be added for message rendering)
+
+**Error Handling:**
+- 429 errors: "Rate limit exceeded, please try again in a moment"
+- 402 errors: "Usage limit reached"
+- Network errors: Generic retry message
 
 ---
 
-## Data Notes
+## Data Flow for AI Analyst
 
-The existing Supabase views and hooks provide all necessary data. For demo purposes:
-- Refund/Failed rates will use placeholder data until views are extended
-- AI Insights text will be static placeholder content
-- Period toggles (Daily/Weekly/Monthly) will be UI-only initially
+```text
+User Question
+     ↓
+Frontend (useAIAnalyst hook)
+     ↓
+Edge Function (ai-analyst)
+     ↓
+Query Supabase Views → Get current metrics
+     ↓
+Build context prompt with real data
+     ↓
+Call Lovable AI Gateway (streaming)
+     ↓
+Stream tokens back to frontend
+     ↓
+Render in ChatMessage with markdown
+```
+
+---
+
+## Implementation Order
+
+1. Edge function for AI chat (backend first)
+2. AI context and hook (state management)
+3. AI panel and drawer components (UI)
+4. Integrate into dashboard layout
+5. Responsive design updates
+6. Loading states and error handling
+7. Accessibility improvements
+8. Export functionality
+9. Final polish and animations
 
