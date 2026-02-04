@@ -14,10 +14,340 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      acquisition_channels: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      acquisition_metrics: {
+        Row: {
+          channel_id: string
+          conversions: number
+          created_at: string
+          id: string
+          leads: number
+          month: string
+          spend: number
+        }
+        Insert: {
+          channel_id: string
+          conversions?: number
+          created_at?: string
+          id?: string
+          leads?: number
+          month: string
+          spend?: number
+        }
+        Update: {
+          channel_id?: string
+          conversions?: number
+          created_at?: string
+          id?: string
+          leads?: number
+          month?: string
+          spend?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acquisition_metrics_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "acquisition_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          acquisition_channel_id: string | null
+          company: string
+          country: string
+          created_at: string
+          email: string
+          health_score: number
+          id: string
+          industry: string
+          name: string
+          plan_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acquisition_channel_id?: string | null
+          company: string
+          country: string
+          created_at?: string
+          email: string
+          health_score?: number
+          id?: string
+          industry: string
+          name: string
+          plan_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acquisition_channel_id?: string | null
+          company?: string
+          country?: string
+          created_at?: string
+          email?: string
+          health_score?: number
+          id?: string
+          industry?: string
+          name?: string
+          plan_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_acquisition_channel_id_fkey"
+            columns: ["acquisition_channel_id"]
+            isOneToOne: false
+            referencedRelation: "acquisition_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string
+          id: string
+          issued_at: string
+          paid_at: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          issued_at?: string
+          paid_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          issued_at?: string
+          paid_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_health"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          created_at: string
+          features: Json | null
+          id: string
+          name: string
+          price_monthly: number
+        }
+        Insert: {
+          created_at?: string
+          features?: Json | null
+          id?: string
+          name: string
+          price_monthly: number
+        }
+        Update: {
+          created_at?: string
+          features?: Json | null
+          id?: string
+          name?: string
+          price_monthly?: number
+        }
+        Relationships: []
+      }
+      revenue_events: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string
+          event_date: string
+          event_type: string
+          id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id: string
+          event_date?: string
+          event_type: string
+          id?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          event_date?: string
+          event_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenue_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_health"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_metrics: {
+        Row: {
+          api_calls: number
+          created_at: string
+          customer_id: string
+          feature_usage: Json | null
+          id: string
+          logins: number
+          month: string
+        }
+        Insert: {
+          api_calls?: number
+          created_at?: string
+          customer_id: string
+          feature_usage?: Json | null
+          id?: string
+          logins?: number
+          month: string
+        }
+        Update: {
+          api_calls?: number
+          created_at?: string
+          customer_id?: string
+          feature_usage?: Json | null
+          id?: string
+          logins?: number
+          month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_metrics_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_metrics_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "v_customer_health"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      v_acquisition_performance: {
+        Row: {
+          channel_name: string | null
+          conversion_rate: number | null
+          cost_per_acquisition: number | null
+          total_conversions: number | null
+          total_leads: number | null
+          total_spend: number | null
+        }
+        Relationships: []
+      }
+      v_customer_health: {
+        Row: {
+          company: string | null
+          country: string | null
+          created_at: string | null
+          email: string | null
+          health_score: number | null
+          id: string | null
+          industry: string | null
+          name: string | null
+          plan_name: string | null
+          risk_level: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_kpi_summary: {
+        Row: {
+          active_customers: number | null
+          arr: number | null
+          cac: number | null
+          churn_rate: number | null
+          churned_customers: number | null
+          mrr: number | null
+          new_customers: number | null
+          total_customers: number | null
+          total_revenue: number | null
+        }
+        Relationships: []
+      }
+      v_revenue_by_plan: {
+        Row: {
+          customer_count: number | null
+          monthly_revenue: number | null
+          percentage: number | null
+          plan_name: string | null
+          price_monthly: number | null
+        }
+        Relationships: []
+      }
+      v_revenue_over_time: {
+        Row: {
+          invoice_count: number | null
+          month: string | null
+          paid_count: number | null
+          revenue: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
