@@ -15,17 +15,21 @@ serve(async (req) => {
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Initialize Supabase client to fetch metrics
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+    }
+
+    // Use service role client to bypass RLS for analytics queries
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     // Fetch current KPIs
-    const { data: kpiData } = await supabase
+    const { data: kpiData, error: kpiError } = await supabase
       .from("v_kpi_summary")
       .select("*")
       .single();
