@@ -1,40 +1,47 @@
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { LogOut, LayoutDashboard } from "lucide-react";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { KPIRibbon } from "@/components/dashboard/KPIRibbon";
+import { RevenueChart } from "@/components/dashboard/RevenueChart";
+import { PlanMixChart } from "@/components/dashboard/PlanMixChart";
+import { ChannelPerformanceChart } from "@/components/dashboard/ChannelPerformanceChart";
+import { RecentInvoicesTable } from "@/components/dashboard/RecentInvoicesTable";
+import { AtRiskCustomersTable } from "@/components/dashboard/AtRiskCustomersTable";
 
 export default function Dashboard() {
-  const { logout } = useAuth();
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Temporary header - will be replaced with full navigation sidebar */}
-      <header className="border-b border-border bg-card">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <LayoutDashboard className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-lg">Aureon Analytics</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={logout} title="Logout">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main content area - placeholder for Phase 3 */}
-      <main className="p-6">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Overview Dashboard</h1>
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-2xl font-bold">Overview</h1>
           <p className="text-muted-foreground">
-            Phase 1 complete! The dashboard content will be built in Phase 3.
+            Key metrics and performance insights at a glance.
           </p>
         </div>
-      </main>
-    </div>
+
+        {/* KPI Ribbon */}
+        <KPIRibbon />
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <RevenueChart />
+          </div>
+          <div>
+            <PlanMixChart />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChannelPerformanceChart />
+          <div className="hidden lg:block" /> {/* Reserved space for future Growth Dynamics chart */}
+        </div>
+
+        {/* Tables Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <RecentInvoicesTable />
+          <AtRiskCustomersTable />
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }
