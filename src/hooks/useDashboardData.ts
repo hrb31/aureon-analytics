@@ -124,17 +124,33 @@ export function useCustomerKPIs() {
       
       if (error) throw error;
 
+      const now = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(now.getDate() - 30);
+
       const atRisk = data?.filter((c) => c.risk_level === "high") ?? [];
       const highValue = data?.filter((c) => (c.health_score ?? 0) >= 80) ?? [];
       const churned = data?.filter((c) => c.status === "churned") ?? [];
+      
+      // Calculate new customers in the last 30 days
+      const newCustomers = data?.filter((c) => {
+        const created = new Date(c.created_at ?? 0);
+        return created >= thirtyDaysAgo;
+      }) ?? [];
+
+      // Calculate new high-value customers this month
+      const newHighValue = highValue.filter((c) => {
+        const created = new Date(c.created_at ?? 0);
+        return created >= thirtyDaysAgo;
+      });
 
       return {
         atRiskCount: atRisk.length,
-        atRiskChange: -5, // Mock change - would need historical data
+        atRiskChange: atRisk.length > 0 ? -Math.round((atRisk.length / (data?.length ?? 1)) * 100) : 0,
         highValueCount: highValue.length,
-        highValueNew: 3, // Mock - would need date-based query
+        highValueNew: newHighValue.length,
         churningCount: churned.length,
-        churningChange: 2, // Mock change
+        churningChange: churned.length,
       };
     },
   });

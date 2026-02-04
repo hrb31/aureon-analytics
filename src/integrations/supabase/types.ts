@@ -175,6 +175,36 @@ export type Database = {
           },
         ]
       }
+      payment_metrics: {
+        Row: {
+          created_at: string | null
+          failed_payments: number | null
+          id: string
+          month: string
+          refund_amount: number | null
+          refunds: number | null
+          total_payments: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          failed_payments?: number | null
+          id?: string
+          month: string
+          refund_amount?: number | null
+          refunds?: number | null
+          total_payments?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          failed_payments?: number | null
+          id?: string
+          month?: string
+          refund_amount?: number | null
+          refunds?: number | null
+          total_payments?: number | null
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string
@@ -326,6 +356,15 @@ export type Database = {
           new_customers: number | null
           total_customers: number | null
           total_revenue: number | null
+        }
+        Relationships: []
+      }
+      v_mrr_movement: {
+        Row: {
+          churned_mrr: number | null
+          contraction_mrr: number | null
+          expansion_mrr: number | null
+          new_mrr: number | null
         }
         Relationships: []
       }

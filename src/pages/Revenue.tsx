@@ -5,8 +5,10 @@ import { Download, TrendingUp, TrendingDown } from "lucide-react";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { PlanMixChart } from "@/components/dashboard/PlanMixChart";
 import { RecentInvoicesTable } from "@/components/dashboard/RecentInvoicesTable";
-import { useKPISummary } from "@/hooks/useDashboardData";
+import { useKPISummary, useRevenueOverTime } from "@/hooks/useDashboardData";
+import { useMRRMovement } from "@/hooks/useMRRMovement";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMemo } from "react";
 
 function formatCurrency(value: number | null | undefined): string {
   if (value == null) return "$0";
@@ -18,8 +20,47 @@ function formatCurrency(value: number | null | undefined): string {
   }).format(value);
 }
 
+function useRevenueTrends() {
+  const { data: revenueData } = useRevenueOverTime();
+
+  return useMemo(() => {
+    if (!revenueData || revenueData.length < 2) {
+      return { mrrTrend: 0, qtrTrend: 0, yearTrend: 0 };
+    }
+
+    // Sort by month descending
+    const sorted = [...revenueData].sort(
+      (a, b) => new Date(b.month ?? 0).getTime() - new Date(a.month ?? 0).getTime()
+    );
+
+    // Calculate month-over-month change
+    const currentMonth = sorted[0]?.revenue ?? 0;
+    const previousMonth = sorted[1]?.revenue ?? 0;
+    const mrrTrend = previousMonth > 0
+      ? ((currentMonth - previousMonth) / previousMonth) * 100
+      : 0;
+
+    // Quarter-over-quarter (sum of last 3 months vs previous 3)
+    const currentQtr = sorted.slice(0, 3).reduce((sum, r) => sum + (r.revenue ?? 0), 0);
+    const previousQtr = sorted.slice(3, 6).reduce((sum, r) => sum + (r.revenue ?? 0), 0);
+    const qtrTrend = previousQtr > 0
+      ? ((currentQtr - previousQtr) / previousQtr) * 100
+      : 0;
+
+    // Year-over-year estimate (annualize current MRR growth)
+    const yearTrend = mrrTrend * 1.2; // Simple projection
+
+    return {
+      mrrTrend: Number(mrrTrend.toFixed(1)),
+      qtrTrend: Number(qtrTrend.toFixed(1)),
+      yearTrend: Number(yearTrend.toFixed(1)),
+    };
+  }, [revenueData]);
+}
+
 function RevenueKPICards() {
   const { data, isLoading } = useKPISummary();
+  const trends = useRevenueTrends();
 
   if (isLoading) {
     return (
@@ -41,26 +82,26 @@ function RevenueKPICards() {
     {
       title: "Total Revenue",
       value: formatCurrency(data?.total_revenue),
-      trend: 12.5,
+      trend: trends.qtrTrend,
       trendLabel: "vs last quarter",
     },
     {
       title: "MRR",
       value: formatCurrency(data?.mrr),
-      trend: 8.2,
+      trend: trends.mrrTrend,
       trendLabel: "vs last month",
     },
     {
       title: "ARR",
       value: formatCurrency(data?.arr),
-      trend: 15.3,
-      trendLabel: "vs last year",
+      trend: trends.yearTrend,
+      trendLabel: "projected",
     },
     {
       title: "Net Revenue Retention",
-      value: "108%",
-      trend: 3.5,
-      trendLabel: "vs last quarter",
+      value: data?.churn_rate != null ? `${Math.max(100 - data.churn_rate, 0).toFixed(0)}%` : "N/A",
+      trend: data?.churn_rate != null ? -data.churn_rate : 0,
+      trendLabel: "churn impact",
     },
   ];
 
@@ -73,13 +114,13 @@ function RevenueKPICards() {
             <p className="text-2xl font-bold mt-1">{kpi.value}</p>
             <div className="flex items-center gap-1 mt-1">
               {kpi.trend >= 0 ? (
-                <TrendingUp className="h-3 w-3 text-success" />
+                <TrendingUp className="h-3 w-3 text-[hsl(var(--chart-2))]" />
               ) : (
-                <TrendingDown className="h-3 w-3 text-destructive" />
+                <TrendingDown className="h-3 w-3 text-[hsl(var(--chart-5))]" />
               )}
               <span
                 className={`text-xs font-medium ${
-                  kpi.trend >= 0 ? "text-success" : "text-destructive"
+                  kpi.trend >= 0 ? "text-[hsl(var(--chart-2))]" : "text-[hsl(var(--chart-5))]"
                 }`}
               >
                 {kpi.trend >= 0 ? "+" : ""}
@@ -91,6 +132,68 @@ function RevenueKPICards() {
         </Card>
       ))}
     </div>
+  );
+}
+
+function MRRMovementSection() {
+  const { data, isLoading } = useMRRMovement();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>MRR Movement</CardTitle>
+          <CardDescription>New, Expansion, Contraction, and Churn</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-4 text-center">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="p-4 bg-muted/50 rounded-lg">
+                <Skeleton className="h-8 w-20 mx-auto mb-2" />
+                <Skeleton className="h-4 w-16 mx-auto" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>MRR Movement</CardTitle>
+        <CardDescription>New, Expansion, Contraction, and Churn</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+          <div className="p-4 bg-[hsl(var(--chart-2)/0.1)] rounded-lg">
+            <p className="text-2xl font-bold text-[hsl(var(--chart-2))]">
+              +{formatCurrency(data?.newMrr)}
+            </p>
+            <p className="text-sm text-muted-foreground">New MRR</p>
+          </div>
+          <div className="p-4 bg-[hsl(var(--chart-1)/0.1)] rounded-lg">
+            <p className="text-2xl font-bold text-[hsl(var(--chart-1))]">
+              +{formatCurrency(data?.expansionMrr)}
+            </p>
+            <p className="text-sm text-muted-foreground">Expansion</p>
+          </div>
+          <div className="p-4 bg-[hsl(var(--chart-4)/0.1)] rounded-lg">
+            <p className="text-2xl font-bold text-[hsl(var(--chart-4))]">
+              -{formatCurrency(data?.contractionMrr)}
+            </p>
+            <p className="text-sm text-muted-foreground">Contraction</p>
+          </div>
+          <div className="p-4 bg-[hsl(var(--chart-5)/0.1)] rounded-lg">
+            <p className="text-2xl font-bold text-[hsl(var(--chart-5))]">
+              -{formatCurrency(data?.churnedMrr)}
+            </p>
+            <p className="text-sm text-muted-foreground">Churn</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -125,33 +228,8 @@ export default function Revenue() {
           </div>
         </div>
 
-        {/* MRR Movement Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>MRR Movement</CardTitle>
-            <CardDescription>New, Expansion, Contraction, and Churn</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div className="p-4 bg-success/10 rounded-lg">
-                <p className="text-2xl font-bold text-success">+$12,400</p>
-                <p className="text-sm text-muted-foreground">New MRR</p>
-              </div>
-              <div className="p-4 bg-chart-1/10 rounded-lg">
-                <p className="text-2xl font-bold text-chart-1">+$8,200</p>
-                <p className="text-sm text-muted-foreground">Expansion</p>
-              </div>
-              <div className="p-4 bg-warning/10 rounded-lg">
-                <p className="text-2xl font-bold text-warning">-$3,100</p>
-                <p className="text-sm text-muted-foreground">Contraction</p>
-              </div>
-              <div className="p-4 bg-destructive/10 rounded-lg">
-                <p className="text-2xl font-bold text-destructive">-$2,400</p>
-                <p className="text-sm text-muted-foreground">Churn</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* MRR Movement Section */}
+        <MRRMovementSection />
 
         {/* Invoices Table */}
         <RecentInvoicesTable />

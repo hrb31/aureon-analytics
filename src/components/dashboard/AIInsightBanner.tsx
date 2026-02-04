@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAIInsight } from "@/hooks/useAIInsight";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function AIInsightBanner() {
   const [dismissed, setDismissed] = useState(false);
+  const { data, isLoading, error } = useAIInsight();
 
   if (dismissed) return null;
+
+  // Don't render if there's an error or no insight
+  if (error || (!isLoading && !data?.insight)) return null;
 
   return (
     <div className="relative flex items-start gap-4 rounded-lg border border-[hsl(var(--chart-1)/0.3)] bg-[hsl(var(--chart-1)/0.08)] p-4">
@@ -18,19 +24,33 @@ export function AIInsightBanner() {
             AI Insight
           </span>
         </div>
-        <p className="text-sm text-foreground">
-          Revenue from Enterprise customers increased by <span className="font-semibold text-[hsl(var(--chart-2))]">23%</span> this month. 
-          This is driven primarily by 3 new Enterprise signups and reduced churn in the segment.
-        </p>
-        <button className="text-sm font-medium text-[hsl(var(--chart-1))] hover:underline">
-          View detailed anomaly report →
-        </button>
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        ) : (
+          <p className="text-sm text-foreground">
+            {data?.highlightValue ? (
+              <>
+                {data.insight.split(data.highlightValue)[0]}
+                <span className="font-semibold text-[hsl(var(--chart-2))]">
+                  {data.highlightValue}
+                </span>
+                {data.insight.split(data.highlightValue).slice(1).join(data.highlightValue)}
+              </>
+            ) : (
+              data?.insight
+            )}
+          </p>
+        )}
       </div>
       <Button
         variant="ghost"
         size="icon"
         className="absolute right-2 top-2 h-6 w-6 text-muted-foreground hover:text-foreground"
         onClick={() => setDismissed(true)}
+        aria-label="Dismiss insight"
       >
         <X className="h-4 w-4" />
       </Button>
