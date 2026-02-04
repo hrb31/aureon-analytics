@@ -15,11 +15,11 @@ export function AIAnalystContainer() {
       {/* Floating button - always visible in bottom-right corner */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-gradient-to-br from-chart-1 to-chart-3 hover:from-chart-1/90 hover:to-chart-3/90"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-gradient-to-br from-chart-1 to-chart-3 hover:from-chart-1/90 hover:to-chart-3/90 border-0"
         size="icon"
         aria-label={isOpen ? "Close AI Analyst" : "Open AI Analyst"}
       >
-        <Sparkles className="h-6 w-6 text-white" />
+        <Sparkles className="h-6 w-6 text-background" />
       </Button>
 
       {/* Mobile: Slide-out drawer */}
