@@ -1,73 +1,115 @@
-# Welcome to your Lovable project
+# Aureon Analytics — Client Analytics Dashboard with AI Analyst
 
-## Project info
+An enterprise-style analytics dashboard built as a learning and exploration project, showcasing how modern consultancies can combine **data infrastructure, dashboards, and AI-driven analysis** into a single cohesive product.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+This project uses **synthetic business data** and is not intended for real-world commercial use.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Overview
 
-**Use Lovable**
+This repository contains a **client-facing analytics dashboard** designed in the style of professional consultancy tools.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+The dashboard provides:
+- Executive-level KPIs (Revenue, MRR, ARR, CAC, Churn, etc.)
+- Deep-dive analytics across revenue, acquisition, and customer health
+- An embedded **AI Analyst** that can answer natural-language questions about the data
+- A polished, enterprise-grade UI with both **Light and Dark modes**
 
-Changes made via Lovable will be committed automatically to this repo.
+The primary goal of the project is **learning and skill-building** across:
+- Product design
+- Data modeling
+- Analytics architecture
+- AI-assisted insight generation
+- Modern full-stack workflows
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Key Features
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- 📊 **Analytics Dashboard**
+  - Overview, Revenue, Acquisition, and Customers sections
+  - Global date range and filter controls
+  - Charts, KPI cards, and data tables
 
-Follow these steps:
+- 🧠 **AI Data Analyst**
+  - Natural-language questions over business data
+  - Plain-English explanations of trends and metrics
+  - Grounded in database views (no fabricated data)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- 🗄 **Structured Data Layer**
+  - Relational schema designed for analytics
+  - Derived SQL views for KPIs and trends
+  - Realistic, seeded fake business data
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- 🎨 **Professional UI**
+  - Design guided by Google Stitch (directional, not pixel-perfect)
+  - Enterprise visual language
+  - Light & Dark mode support
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## Tech Stack
 
-**Edit a file directly in GitHub**
+- **Frontend / App Builder:** Lovable
+- **Design Reference:** Google Stitch
+- **Database:** Supabase (PostgreSQL)
+- **AI Layer:** Lovable AI Gateway
+- **Styling:** Custom design system (Light & Dark modes)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Data Notes
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- All data in this project is **synthetic**
+- No real customers, payments, or personal data are used
+- Pricing and plans exist **only as analytical data**, not as product features
+- There is no billing, checkout, or subscription management functionality
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## AI Analyst Behaviour
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The AI Analyst is designed to:
+- Answer questions using database-backed analytics views
+- Respect global filters and date ranges
+- Cite real metrics in responses
+- Ask for clarification when questions are ambiguous
+- Avoid hallucinating or guessing missing data
 
-## How can I deploy this project?
+Example questions:
+- “Why did revenue change last month?”
+- “Which channel has the highest CAC?”
+- “Which customers are most at risk?”
+- “Summarise performance for this period.”
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## Project Status
 
-Yes, you can!
+This project is **exploratory and iterative**.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+The focus is on:
+- Improving system design intuition
+- Learning how dashboards and AI layers work together
+- Experimenting with data modeling and analytics UX
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+It is not intended to be production-ready software.
+
+---
+
+## Future Ideas (Optional)
+
+- More advanced cohort and retention analysis
+- Enhanced AI insight summaries
+- Data export features
+- Additional visual polish and micro-interactions
+- Optional swap to direct OpenAI API usage for deeper control
+
+---
+
+## License
+
+This project is shared for **educational and portfolio purposes** only.
+
+Feel free to explore the code, but do not use it as-is for production or commercial deployments.
