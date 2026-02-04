@@ -98,3 +98,74 @@ export function useAtRiskCustomers(limit = 10) {
     },
   });
 }
+
+// Customer Directory hooks
+export function useCustomerHealth() {
+  return useQuery({
+    queryKey: ["customer-health"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("v_customer_health")
+        .select("*")
+        .order("health_score", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCustomerKPIs() {
+  return useQuery({
+    queryKey: ["customer-kpis"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("v_customer_health")
+        .select("*");
+      
+      if (error) throw error;
+
+      const atRisk = data?.filter((c) => c.risk_level === "high") ?? [];
+      const highValue = data?.filter((c) => (c.health_score ?? 0) >= 80) ?? [];
+      const churned = data?.filter((c) => c.status === "churned") ?? [];
+
+      return {
+        atRiskCount: atRisk.length,
+        atRiskChange: -5, // Mock change - would need historical data
+        highValueCount: highValue.length,
+        highValueNew: 3, // Mock - would need date-based query
+        churningCount: churned.length,
+        churningChange: 2, // Mock change
+      };
+    },
+  });
+}
+
+export function useImmediateAttentionCustomers() {
+  return useQuery({
+    queryKey: ["immediate-attention-customers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("v_customer_health")
+        .select("*")
+        .eq("risk_level", "high")
+        .order("health_score", { ascending: true })
+        .limit(5);
+
+      if (error) throw error;
+
+      // Transform to alert format
+      return data?.map((customer) => {
+        const severity: "critical" | "warning" = (customer.health_score ?? 0) < 30 ? "critical" : "warning";
+        return {
+          id: customer.id ?? "",
+          name: customer.name ?? "",
+          company: customer.company ?? "",
+          plan: customer.plan_name ?? "",
+          alertType: "health" as const,
+          alertMessage: `Health Score dropped to ${customer.health_score ?? 0}%`,
+          severity,
+        };
+      }) ?? [];
+    },
+  });
+}

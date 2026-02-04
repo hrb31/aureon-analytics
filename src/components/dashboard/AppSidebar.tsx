@@ -22,10 +22,10 @@ import {
 import { Button } from "@/components/ui/button";
 
 const mainNavItems = [
-  { title: "Overview", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Revenue", url: "/dashboard/revenue", icon: DollarSign },
-  { title: "Acquisition", url: "/dashboard/acquisition", icon: TrendingUp },
-  { title: "Customers", url: "/dashboard/customers", icon: Users },
+  { title: "Overview", url: "/dashboard", icon: LayoutDashboard, end: true },
+  { title: "Revenue", url: "/dashboard/revenue", icon: DollarSign, end: false },
+  { title: "Acquisition", url: "/dashboard/acquisition", icon: TrendingUp, end: false },
+  { title: "Customers", url: "/dashboard/customers", icon: Users, end: false },
 ];
 
 const settingsNavItems = [
