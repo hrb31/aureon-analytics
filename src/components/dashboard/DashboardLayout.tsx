@@ -23,10 +23,11 @@ function DashboardHeader() {
       {!isMobile && (
         <Button
           onClick={() => setIsOpen(!isOpen)}
+          variant={isOpen ? "secondary" : "default"}
           className={
             isOpen
-              ? "gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              : "gap-2 bg-gradient-to-r from-chart-1 to-chart-3 text-white hover:opacity-90 shadow-md"
+              ? "gap-2"
+              : "gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
           }
           size="sm"
         >
