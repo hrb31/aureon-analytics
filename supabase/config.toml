@@ -2,6 +2,3 @@ project_id = "plmcyayferxcbwsbknss"
 
 [functions.verify-password]
 verify_jwt = false
-
-[functions.seed-admin]
-verify_jwt = false
