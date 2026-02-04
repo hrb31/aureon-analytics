@@ -212,7 +212,7 @@ export default function Login() {
 
           {/* Copyright */}
           <p className="text-center text-xs text-muted-foreground">
-            © 2024 Aureon Analytics. All rights reserved. AES-256 Bit Encryption Active.
+            © 2026 Aureon Analytics. All rights reserved. AES-256 Bit Encryption Active.
           </p>
         </div>
       </main>
