@@ -1,361 +1,350 @@
 
-# Phase 5: Polish, New Pages, and Floating AI Chatbot
+
+# Plan: Remove Placeholder Data, Add Dynamic AI Insights, and Colorful Charts
 
 ## Overview
 
-This plan covers three major areas:
-1. **AI Analyst Redesign**: Convert from sidebar panel to a floating chatbot bubble in the corner (like the reference image)
-2. **New Pages**: Revenue Deep Dive, Acquisition & CAC, and Customer Directory
-3. **Phase 5 Polish**: Responsive design, loading states, error handling, accessibility, export functionality
+This plan addresses three key issues:
+1. **Placeholder/Mock Data**: Several components use hardcoded values that should come from the database
+2. **AI Insight Banner**: Currently shows static text - needs to generate real AI-powered insights or be removed
+3. **Bar Chart Colors**: The horizontal bar chart uses a single white/muted color - needs a vibrant multi-color scheme
 
 ---
 
-## Part 1: AI Analyst Floating Chatbot Redesign
+## Part 1: Identify and Replace Placeholder Data
+
+### Current Issues Found
+
+| Location | Issue | Fix |
+|----------|-------|-----|
+| `MiniMetricCard.tsx` (lines 66-74, 76-95) | Hardcoded refund/failed payment data | Add database table or calculate from invoices |
+| `Revenue.tsx` (lines 44-65) | Hardcoded trend percentages (12.5%, 8.2%, etc.) | Calculate from historical data |
+| `Revenue.tsx` (lines 129-153) | Hardcoded MRR Movement values ($12,400, $8,200, etc.) | Create database view or calculate from revenue_events |
+| `useDashboardData.ts` (lines 133-137) | Mock change values (-5%, 3, 2%) | Calculate from historical snapshots |
+
+### Database Changes Required
+
+**New Table: `payment_metrics`**
+To track refund rate and failed payments over time:
+
+```sql
+CREATE TABLE payment_metrics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  month DATE NOT NULL,
+  total_payments INTEGER DEFAULT 0,
+  failed_payments INTEGER DEFAULT 0,
+  refunds INTEGER DEFAULT 0,
+  refund_amount NUMERIC DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE payment_metrics ENABLE ROW LEVEL SECURITY;
+
+-- Add read policy
+CREATE POLICY "Allow authenticated read access" ON payment_metrics
+  FOR SELECT TO authenticated USING (true);
+```
+
+**New View: `v_mrr_movement`**
+To calculate MRR movement (new, expansion, contraction, churn):
+
+```sql
+CREATE VIEW v_mrr_movement AS
+WITH current_month AS (
+  SELECT DATE_TRUNC('month', CURRENT_DATE) as month_start
+),
+monthly_revenue AS (
+  SELECT 
+    c.id as customer_id,
+    DATE_TRUNC('month', i.issued_at) as month,
+    SUM(i.amount) as revenue
+  FROM invoices i
+  JOIN customers c ON i.customer_id = c.id
+  WHERE i.status = 'paid'
+  GROUP BY c.id, DATE_TRUNC('month', i.issued_at)
+),
+revenue_changes AS (
+  SELECT
+    m1.customer_id,
+    m1.month,
+    m1.revenue as current_revenue,
+    COALESCE(m2.revenue, 0) as previous_revenue
+  FROM monthly_revenue m1
+  LEFT JOIN monthly_revenue m2 
+    ON m1.customer_id = m2.customer_id 
+    AND m1.month = m2.month + INTERVAL '1 month'
+)
+SELECT
+  SUM(CASE WHEN previous_revenue = 0 AND current_revenue > 0 THEN current_revenue ELSE 0 END) as new_mrr,
+  SUM(CASE WHEN previous_revenue > 0 AND current_revenue > previous_revenue THEN current_revenue - previous_revenue ELSE 0 END) as expansion_mrr,
+  SUM(CASE WHEN previous_revenue > 0 AND current_revenue < previous_revenue AND current_revenue > 0 THEN previous_revenue - current_revenue ELSE 0 END) as contraction_mrr,
+  SUM(CASE WHEN previous_revenue > 0 AND current_revenue = 0 THEN previous_revenue ELSE 0 END) as churned_mrr
+FROM revenue_changes
+WHERE month >= DATE_TRUNC('month', CURRENT_DATE);
+```
+
+### Seed Data for New Tables
+
+Insert realistic payment metrics:
+
+```sql
+INSERT INTO payment_metrics (month, total_payments, failed_payments, refunds, refund_amount)
+SELECT 
+  generate_series(
+    DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '6 months',
+    DATE_TRUNC('month', CURRENT_DATE),
+    INTERVAL '1 month'
+  ) as month,
+  FLOOR(RANDOM() * 50 + 100)::int as total_payments,
+  FLOOR(RANDOM() * 5 + 1)::int as failed_payments,
+  FLOOR(RANDOM() * 3 + 1)::int as refunds,
+  FLOOR(RANDOM() * 500 + 100) as refund_amount;
+```
+
+---
+
+## Part 2: AI Insight Banner - Generate Real Insights
 
 ### Current State
-The AI Analyst currently opens as a sidebar panel on desktop and a drawer on mobile. Based on your feedback and the reference image, it should instead be a floating button in the bottom-right corner that opens a chat popup/drawer overlay.
+The `AIInsightBanner.tsx` shows static hardcoded text about Enterprise revenue increasing by 23%.
 
-### Changes Required
+### Solution Options
 
-**Update: `src/components/ai-analyst/AIAnalystContainer.tsx`**
-- Remove the sticky sidebar approach
-- Render a floating button on both desktop and mobile
-- When clicked, open a floating chat popup (desktop) or full drawer (mobile)
+**Option A: Remove the Banner (Simplest)**
+Remove the `<AIInsightBanner />` from `Dashboard.tsx` until a proper AI insight system is built.
 
-**Update: `src/components/ai-analyst/AIAnalystDrawer.tsx`**
-- This component already has the floating button pattern - extend it to work for desktop too
-- Add a floating popup variant for desktop (positioned above the button)
+**Option B: Generate Dynamic Insights (Recommended)**
+Create a Supabase Edge Function that analyzes current metrics and generates an insight.
 
-**New Component: `src/components/ai-analyst/AIAnalystPopup.tsx`**
-- Desktop floating chat window (similar to Intercom/Drift style)
-- Fixed position: bottom-right, above the floating button
-- Dimensions: ~400px wide, ~500px tall
-- Contains the same AIAnalystPanel content
-- Smooth scale-in animation when opening
+### Implementation (Option B)
 
-**Update: `src/components/dashboard/DashboardLayout.tsx`**
-- Remove the AI Analyst toggle button from the header
-- Remove the AIAnalystContainer from the layout structure
-- AI Analyst will now float independently
+**New Edge Function: `generate-insight`**
 
-**Update: `src/components/dashboard/AppSidebar.tsx`**
-- Keep the AI Analyst menu item for quick access
-- Clicking it will toggle the floating popup
-
-**Visual Design (from reference):**
-- Floating button: Gradient blue/purple, sparkles icon, bottom-right corner
-- Optional notification dot when insights are available
-- Popup has rounded corners, shadow, and smooth animations
-
----
-
-## Part 2: Customer Directory Page
-
-Based on the reference image, this page includes:
-
-### Page Header
-- Title: "Customer Directory"
-- Export CSV button
-
-### KPI Cards Row (3 cards)
-- **At-Risk Customers**: Count with percentage change vs last week
-- **High Value Clients**: Count with "new this month" indicator
-- **Churning (30D)**: Count with percentage change vs last month
-
-### Immediate Attention Required Section
-- Horizontal row of alert cards for critical customers
-- Each card shows: Customer name, plan, alert reason (e.g., "Health Score dropped by 20%", "Payment overdue 15 days", "Usage down by 40%")
-- Color-coded alert strips (red for critical, yellow for warning)
-- "View all alerts" link
-
-### Customer Table
-- Search input: "Search customers by name, ID or email..."
-- Filters: All Statuses dropdown, All Plans dropdown
-- Columns: Customer (avatar + name + email), Plan, Health Score (progress bar + percentage), Status (badge), Last Activity, Actions (three-dot menu)
-- Pagination: "Showing 1 to 10 of 150 customers" with page numbers
-
-### New Files
-
-**`src/pages/Customers.tsx`**
-- Main page component with all sections
-
-**`src/components/customers/CustomerKPICards.tsx`**
-- The three KPI cards for at-risk, high-value, and churning customers
-
-**`src/components/customers/ImmediateAttentionSection.tsx`**
-- The horizontal alert cards for customers needing attention
-
-**`src/components/customers/CustomerTable.tsx`**
-- Full-featured table with search, filters, and pagination
-
-**`src/components/customers/CustomerFilters.tsx`**
-- Search input and filter dropdowns
-
-**`src/components/customers/HealthScoreBar.tsx`**
-- Reusable health score progress bar component
-
-### New Data Hooks
-
-**Update: `src/hooks/useDashboardData.ts`**
-Add hooks for:
-- `useCustomerKPIs()` - Fetch at-risk count, high-value count, churning count
-- `useCustomersWithPagination(page, filters)` - Paginated customer list
-- `useImmediateAttentionCustomers()` - Customers with critical alerts
-
----
-
-## Part 3: Revenue Deep Dive Page
-
-### Page Structure
-
-**Header**
-- Title: "Revenue Deep Dive"
-- Date range selector
-- Export button
-
-**KPI Row**
-- Total Revenue (with trend)
-- MRR (with trend)
-- ARR (with trend)
-- Net Revenue Retention
-
-**Main Charts**
-- Revenue Over Time (larger, more detailed version with multiple metrics)
-- Revenue by Plan breakdown (expanded pie/donut chart)
-- MRR Movement chart (new vs expansion vs contraction vs churn)
-
-**Invoice Analysis Table**
-- Full invoice list with more columns
-- Filter by status, date range, amount range
-
-### New Files
-
-**`src/pages/Revenue.tsx`**
-- Main revenue page
-
-**`src/components/revenue/RevenueKPICards.tsx`**
-- Revenue-specific KPI cards
-
-**`src/components/revenue/MRRMovementChart.tsx`**
-- Stacked bar chart showing MRR changes
-
-**`src/components/revenue/RevenueBreakdownChart.tsx`**
-- Detailed revenue breakdown by plan, segment
-
----
-
-## Part 4: Acquisition & CAC Page
-
-### Page Structure
-
-**Header**
-- Title: "Acquisition & CAC"
-- Period selector
-
-**KPI Row**
-- Total Spend
-- Total Conversions
-- Average CAC
-- Best Performing Channel
-
-**Charts**
-- Spend vs Conversions Over Time (dual-axis chart)
-- Channel Performance Comparison (already exists - enhance)
-- CAC Trend by Channel
-- Conversion Funnel (leads → conversions)
-
-### New Files
-
-**`src/pages/Acquisition.tsx`**
-- Main acquisition page
-
-**`src/components/acquisition/AcquisitionKPICards.tsx`**
-- Acquisition-specific KPIs
-
-**`src/components/acquisition/SpendVsConversionsChart.tsx`**
-- Dual-axis trend chart
-
-**`src/components/acquisition/CACTrendChart.tsx`**
-- CAC over time by channel
-
-**`src/components/acquisition/ConversionFunnelChart.tsx`**
-- Funnel visualization
-
----
-
-## Part 5: Phase 5 Polish & Quality
-
-### Responsive Design
-
-**Update: `src/components/dashboard/KPIRibbon.tsx`**
-- Already has responsive grid - verify breakpoints work well
-
-**Update: `src/pages/Dashboard.tsx`**
-- Tighter padding on mobile (p-4 instead of p-6)
-- Better stacking for chart grid
-
-**Update: All table components**
-- Add horizontal scroll wrapper
-- Mobile-friendly card view option for very small screens
-
-### Loading States & Skeletons
-
-**New: `src/components/ui/chart-skeleton.tsx`**
-- Animated skeleton that looks like chart placeholder
-- Variants for line chart, bar chart, pie chart
-
-**Update: Chart components**
-- Use chart-specific skeletons instead of generic Skeleton
-
-### Error Handling
-
-**New: `src/components/ErrorBoundary.tsx`**
-- React error boundary with friendly fallback
-- Retry button
-
-**Update: All data components**
-- Consistent error state with retry functionality
-
-### Accessibility
-
-**Update: `src/index.css`**
-```css
-/* Focus visible styles */
-*:focus-visible {
-  @apply outline-2 outline-offset-2 outline-ring;
-}
-
-/* Skip to content link */
-.skip-link {
-  @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50;
-}
-```
-
-**Update: Icon-only buttons**
-- Add aria-label to all icon-only buttons
-- Ensure proper focus indicators
-
-### Export Functionality
-
-**New: `src/lib/export.ts`**
 ```typescript
-export function exportToCSV<T extends Record<string, unknown>>(
-  data: T[],
-  filename: string,
-  columns?: { key: keyof T; label: string }[]
-): void
+// supabase/functions/generate-insight/index.ts
+// Analyzes current metrics and generates a single key insight
+// Uses the Lovable AI gateway to generate natural language insights
+// Returns: { insight: string, detailsAvailable: boolean }
 ```
 
-**Update: `src/components/dashboard/RecentInvoicesTable.tsx`**
-- Wire up the Export CSV button
+**Update: `AIInsightBanner.tsx`**
 
-**Update: `src/components/customers/CustomerTable.tsx`**
-- Add export functionality
+```typescript
+// Fetch insight from edge function on mount
+// Show loading skeleton while fetching
+// Display generated insight or hide if none available
+// Cache insight for session to avoid repeated API calls
+```
 
-### Animations & Micro-interactions
+**New Hook: `useAIInsight`**
 
-**Update: `src/index.css`**
-- Add hover transitions for cards
-- Subtle scale effect on buttons
-- Smooth color transitions on badges
+```typescript
+// src/hooks/useAIInsight.ts
+export function useAIInsight() {
+  return useQuery({
+    queryKey: ["ai-insight"],
+    queryFn: async () => {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-insight`, {
+        headers: { Authorization: `Bearer ${ANON_KEY}` }
+      });
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 30, // Cache for 30 minutes
+  });
+}
+```
 
 ---
 
-## Part 6: Routing Updates
+## Part 3: Colorful Bar Charts
 
-**Update: `src/App.tsx`**
+### Current Issue
+`ChannelPerformanceChart.tsx` uses `fill="hsl(var(--primary))"` which is a single muted color (white/gray in dark mode).
 
-Add new routes:
-```tsx
-<Route path="/dashboard" element={<Dashboard />} />
-<Route path="/dashboard/revenue" element={<Revenue />} />
-<Route path="/dashboard/acquisition" element={<Acquisition />} />
-<Route path="/dashboard/customers" element={<Customers />} />
+### Solution
+Assign distinct colors to each channel bar using the chart color palette.
+
+**Update: `ChannelPerformanceChart.tsx`**
+
+```typescript
+const CHANNEL_COLORS = [
+  "hsl(var(--chart-1))", // Cyan
+  "hsl(var(--chart-2))", // Emerald
+  "hsl(var(--chart-3))", // Violet
+  "hsl(var(--chart-4))", // Amber
+  "hsl(var(--chart-5))", // Rose
+  "hsl(var(--chart-1))", // Repeat for more channels
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+];
+
+// Transform data to include color
+const chartData = data?.map((item, index) => ({
+  name: item.channel_name ?? "Unknown",
+  conversions: item.total_conversions ?? 0,
+  fill: CHANNEL_COLORS[index % CHANNEL_COLORS.length],
+})) ?? [];
+
+// Use Cell component for individual bar colors
+<Bar dataKey="conversions" radius={[0, 4, 4, 0]}>
+  {chartData.map((entry, index) => (
+    <Cell key={`cell-${index}`} fill={entry.fill} />
+  ))}
+</Bar>
 ```
-
-Each page will use `DashboardLayout` for consistent navigation.
 
 ---
 
-## New File Structure
+## Part 4: Fix Remaining Hardcoded Values
 
-```text
-src/
-├── components/
-│   ├── ai-analyst/
-│   │   ├── AIAnalystContainer.tsx (updated - floating only)
-│   │   ├── AIAnalystDrawer.tsx (updated)
-│   │   ├── AIAnalystPopup.tsx (new - desktop floating chat)
-│   │   ├── AIAnalystPanel.tsx
-│   │   ├── ChatMessage.tsx
-│   │   └── SuggestedPrompts.tsx
-│   ├── customers/
-│   │   ├── CustomerKPICards.tsx
-│   │   ├── ImmediateAttentionSection.tsx
-│   │   ├── CustomerTable.tsx
-│   │   ├── CustomerFilters.tsx
-│   │   └── HealthScoreBar.tsx
-│   ├── revenue/
-│   │   ├── RevenueKPICards.tsx
-│   │   ├── MRRMovementChart.tsx
-│   │   └── RevenueBreakdownChart.tsx
-│   ├── acquisition/
-│   │   ├── AcquisitionKPICards.tsx
-│   │   ├── SpendVsConversionsChart.tsx
-│   │   ├── CACTrendChart.tsx
-│   │   └── ConversionFunnelChart.tsx
-│   ├── dashboard/ (existing + updates)
-│   ├── ErrorBoundary.tsx
-│   └── ui/
-│       └── chart-skeleton.tsx
-├── hooks/
-│   ├── useDashboardData.ts (extended with new hooks)
-│   └── useAIAnalyst.ts
-├── lib/
-│   └── export.ts
-└── pages/
-    ├── Dashboard.tsx
-    ├── Revenue.tsx (new)
-    ├── Acquisition.tsx (new)
-    ├── Customers.tsx (new)
-    └── ...
+### Revenue Page KPIs
+
+**Update: `Revenue.tsx`**
+
+Create a hook to calculate real trend percentages:
+
+```typescript
+// Calculate trend by comparing current period to previous
+function useRevenueTrends() {
+  const { data: revenueData } = useRevenueOverTime();
+  
+  // Calculate MoM, QoQ, YoY changes from actual data
+  const calculateTrend = (periods: number) => {
+    // Compare sum of last N periods vs previous N periods
+  };
+  
+  return {
+    mrrTrend: calculateTrend(1),  // Month over month
+    qtrTrend: calculateTrend(3),  // Quarter over quarter
+    yearTrend: calculateTrend(12), // Year over year
+  };
+}
 ```
+
+### MRR Movement Section
+
+**Update: `Revenue.tsx`**
+
+Replace hardcoded values with data from `v_mrr_movement` view:
+
+```typescript
+function useMRRMovement() {
+  return useQuery({
+    queryKey: ["mrr-movement"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("v_mrr_movement")
+        .select("*")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+```
+
+### Mini Metric Cards
+
+**Update: `MiniMetricCard.tsx`**
+
+Create hook for payment metrics:
+
+```typescript
+function usePaymentMetrics() {
+  return useQuery({
+    queryKey: ["payment-metrics"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payment_metrics")
+        .select("*")
+        .order("month", { ascending: false })
+        .limit(7);
+      if (error) throw error;
+      
+      // Calculate refund rate and failed payment rate
+      // Generate sparkline data from last 7 months
+      return {
+        refundRate: calculateRefundRate(data),
+        failedRate: calculateFailedRate(data),
+        refundTrend: calculateTrend(data, 'refunds'),
+        failedTrend: calculateTrend(data, 'failed_payments'),
+        refundSparkline: data.map(d => ({ value: d.refunds })),
+        failedSparkline: data.map(d => ({ value: d.failed_payments })),
+      };
+    },
+  });
+}
+```
+
+### Customer KPIs Change Percentages
+
+**Update: `useDashboardData.ts`**
+
+The current implementation has mock values. Since we don't have historical snapshots, we have two options:
+
+1. **Simple**: Remove the change percentage display
+2. **Better**: Add a `customer_snapshots` table to track weekly/monthly counts
+
+For now, we'll calculate based on created_at dates:
+
+```typescript
+// Calculate "new this month" from customers created in last 30 days
+const newThisMonth = data?.filter(c => {
+  const created = new Date(c.created_at);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  return created >= thirtyDaysAgo;
+}).length ?? 0;
+```
+
+---
+
+## Summary of Files to Create/Update
+
+### New Files
+- `supabase/functions/generate-insight/index.ts` - AI insight generation
+- `src/hooks/useAIInsight.ts` - Hook for AI insight
+
+### Database Migrations
+- Create `payment_metrics` table
+- Create `v_mrr_movement` view
+- Seed `payment_metrics` with sample data
+
+### Updated Files
+- `src/components/dashboard/AIInsightBanner.tsx` - Dynamic AI insights
+- `src/components/dashboard/ChannelPerformanceChart.tsx` - Multi-color bars
+- `src/components/dashboard/MiniMetricCard.tsx` - Real payment metrics
+- `src/pages/Revenue.tsx` - Real trends and MRR movement
+- `src/hooks/useDashboardData.ts` - Real calculations instead of mocks
 
 ---
 
 ## Implementation Order
 
-1. **AI Chatbot Redesign** - Convert sidebar to floating popup/drawer
-2. **Routing Setup** - Add routes for new pages
-3. **Customer Directory Page** - Most detailed page first (reference image)
-4. **Revenue Deep Dive Page** - Extended analytics
-5. **Acquisition & CAC Page** - Channel performance
-6. **Phase 5 Polish** - Export, accessibility, animations
-7. **Testing & Refinement** - Cross-browser, responsive testing
+1. Database migrations (tables and views)
+2. Seed payment_metrics data
+3. Update ChannelPerformanceChart with colors (quick win)
+4. Update useDashboardData to remove mock values
+5. Create usePaymentMetrics hook and update MiniMetricCards
+6. Update Revenue.tsx with real MRR movement
+7. Create generate-insight edge function
+8. Update AIInsightBanner to use dynamic insights
+9. Test all components in both light and dark mode
 
 ---
 
 ## Technical Notes
 
-**Floating AI Chatbot:**
-- Use `fixed` positioning with `z-50` to float above all content
-- Desktop popup: 400px wide, 500px tall, positioned bottom-right with margin
-- Mobile: Full-screen drawer (existing Sheet component)
-- Smooth animations using Tailwind's `animate-scale-in` or custom keyframes
+**Chart Colors:**
+- Using Recharts `<Cell>` component to assign individual colors to each bar
+- Colors cycle through the 5 chart colors defined in CSS variables
 
-**Customer Table:**
-- Use `@tanstack/react-query` for pagination
-- Client-side filtering for status/plan (or server-side if data is large)
-- Health score bar: gradient from red (0%) → yellow (50%) → green (100%)
+**AI Insight Caching:**
+- 30-minute stale time prevents excessive API calls
+- Insight regenerates when user revisits after cache expires
 
-**Export Utility:**
-- Convert data array to CSV string
-- Handle special characters and escaping
-- Trigger download with `Blob` and `URL.createObjectURL`
+**Database Views:**
+- `v_mrr_movement` uses window functions to compare month-over-month revenue
+- Payment metrics table enables historical trending
 
-**Database Views Used:**
-- `v_customer_health` - Extended for customer directory
-- `v_kpi_summary` - KPI cards
-- `v_revenue_over_time` - Revenue charts
-- `v_revenue_by_plan` - Plan breakdown
-- `v_acquisition_performance` - Channel metrics
