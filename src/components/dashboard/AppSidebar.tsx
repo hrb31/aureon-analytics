@@ -50,13 +50,13 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-border">
-        <div className="flex items-center gap-3 px-2 py-3">
+        <div className="flex items-center gap-3 px-2 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center overflow-hidden flex-shrink-0">
             <img src={logo} alt="Aureon" className="h-6 w-6 object-contain" />
           </div>
-          {!collapsed && (
-            <span className="font-semibold text-lg truncate">Aureon Analytics</span>
-          )}
+          <span className="font-semibold text-lg truncate group-data-[collapsible=icon]:hidden">
+            Aureon Analytics
+          </span>
         </div>
       </SidebarHeader>
 
