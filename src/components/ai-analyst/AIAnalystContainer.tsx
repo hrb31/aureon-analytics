@@ -13,16 +13,16 @@ export function AIAnalystContainer() {
     return <AIAnalystDrawer />;
   }
 
-  // Desktop: Render persistent collapsible sidebar
+  // Desktop: Render fixed sidebar panel that stays in viewport
   return (
     <div
       className={cn(
-        "shrink-0 transition-all duration-300 ease-in-out",
+        "shrink-0 transition-all duration-300 ease-in-out h-screen sticky top-0",
         isOpen ? "w-[400px]" : "w-0"
       )}
     >
       {isOpen && (
-        <div className="h-full w-[400px]">
+        <div className="h-screen w-[400px] overflow-hidden">
           <AIAnalystPanel onClose={() => setIsOpen(false)} />
         </div>
       )}
