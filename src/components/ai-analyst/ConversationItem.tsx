@@ -87,7 +87,7 @@ export function ConversationItem({
   return (
     <div
       className={cn(
-        "group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors",
+        "group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors min-w-0",
         isActive
           ? "bg-accent text-accent-foreground"
           : "hover:bg-muted/50"
@@ -95,7 +95,7 @@ export function ConversationItem({
       onClick={() => onSelect(conversation.id)}
     >
       <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span className="flex-1 truncate text-sm" title={conversation.title}>
+      <span className="flex-1 min-w-0 text-sm truncate" title={conversation.title}>
         {conversation.title}
       </span>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
