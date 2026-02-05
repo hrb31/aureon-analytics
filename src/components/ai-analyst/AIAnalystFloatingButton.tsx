@@ -20,19 +20,16 @@ export function AIAnalystFloatingButton() {
         className={cn(
           "fixed z-50 h-12 w-12 md:h-14 md:w-14 rounded-full shadow-lg",
           "right-4 md:right-6",
-          "bottom-4 md:bottom-6",
+          "bottom-[calc(1rem+env(safe-area-inset-bottom))] md:bottom-6",
           "bg-gradient-to-r from-chart-1 to-chart-3 hover:opacity-90",
           "transition-transform duration-200",
           isOpen && !isMobile && "rotate-180"
         )}
-        style={{
-          paddingBottom: "max(0px, env(safe-area-inset-bottom))",
-        }}
       >
         {isOpen && !isMobile ? (
-          <X className="h-5 w-5 md:h-6 md:w-6" />
+          <X className="h-6 w-6" />
         ) : (
-          <Sparkles className="h-5 w-5 md:h-6 md:w-6" />
+          <Sparkles className="h-6 w-6" />
         )}
       </Button>
 
