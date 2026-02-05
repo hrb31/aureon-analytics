@@ -6,10 +6,17 @@ import { AIAnalystPopup } from "./AIAnalystPopup";
 import { AIAnalystPanel } from "./AIAnalystPanel";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLocation } from "react-router-dom";
 
 export function AIAnalystFloatingButton() {
   const { isOpen, setIsOpen } = useAIAnalyst();
   const isMobile = useIsMobile();
+  const location = useLocation();
+
+  // Hide on the dedicated AI Analyst page
+  if (location.pathname === "/dashboard/ai-analyst") {
+    return null;
+  }
 
   return (
     <>

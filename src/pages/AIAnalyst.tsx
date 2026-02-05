@@ -290,7 +290,7 @@ export default function AIAnalyst() {
 
   return (
     <DashboardLayout>
-      <div className="flex h-[calc(100vh-3.5rem)] gap-0 -m-4 md:-m-6">
+      <div className="flex h-[calc(100vh-3.5rem-1rem)] md:h-[calc(100vh-3.5rem-1.5rem)] gap-0 -m-4 md:-m-6">
         {/* Desktop Sidebar */}
         <div className="hidden md:block w-72 border-r border-border shrink-0">
           <ConversationList
