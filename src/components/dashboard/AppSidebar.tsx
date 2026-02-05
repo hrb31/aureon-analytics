@@ -103,7 +103,7 @@ export function AppSidebar() {
                     activeClassName="bg-accent text-accent-foreground"
                   >
                     <Sparkles className="h-4 w-4 text-chart-1" />
-                    <span className="bg-gradient-to-r from-chart-1 to-chart-3 bg-clip-text text-transparent font-medium">
+                    <span className="font-medium text-chart-1">
                       AI Analyst
                     </span>
                   </NavLink>
