@@ -306,11 +306,11 @@ export default function AIAnalyst() {
             <h1 className="text-sm font-medium">AI Analyst</h1>
             <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <History className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <History className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-80 p-0">
+              <SheetContent side="left" className="w-[85vw] max-w-80 p-0">
                 <ConversationList
                   activeConversationId={activeConversationId}
                   onSelectConversation={handleSelectConversation}

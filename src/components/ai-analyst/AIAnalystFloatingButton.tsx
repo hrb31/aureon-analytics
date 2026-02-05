@@ -1,11 +1,15 @@
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAIAnalyst } from "@/hooks/useAIAnalyst";
 import { AIAnalystPopup } from "./AIAnalystPopup";
+import { AIAnalystPanel } from "./AIAnalystPanel";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function AIAnalystFloatingButton() {
   const { isOpen, setIsOpen } = useAIAnalyst();
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -14,22 +18,38 @@ export function AIAnalystFloatingButton() {
         onClick={() => setIsOpen(!isOpen)}
         size="icon"
         className={cn(
-          "fixed right-4 md:right-6 z-50 h-12 w-12 md:h-14 md:w-14 rounded-full shadow-lg pb-safe",
+          "fixed z-50 h-12 w-12 md:h-14 md:w-14 rounded-full shadow-lg",
+          "right-4 md:right-6",
           "bottom-4 md:bottom-6",
           "bg-gradient-to-r from-chart-1 to-chart-3 hover:opacity-90",
           "transition-transform duration-200",
-          isOpen && "rotate-180"
+          isOpen && !isMobile && "rotate-180"
         )}
+        style={{
+          paddingBottom: "max(0px, env(safe-area-inset-bottom))",
+        }}
       >
-        {isOpen ? (
-          <X className="h-6 w-6" />
+        {isOpen && !isMobile ? (
+          <X className="h-5 w-5 md:h-6 md:w-6" />
         ) : (
-          <Sparkles className="h-6 w-6" />
+          <Sparkles className="h-5 w-5 md:h-6 md:w-6" />
         )}
       </Button>
 
-      {/* Popup */}
-      {isOpen && <AIAnalystPopup onClose={() => setIsOpen(false)} />}
+      {/* Mobile: Full-screen drawer */}
+      {isMobile && (
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetContent side="bottom" className="h-[85vh] p-0 rounded-t-2xl">
+            <SheetHeader className="sr-only">
+              <SheetTitle>AI Analyst</SheetTitle>
+            </SheetHeader>
+            <AIAnalystPanel onClose={() => setIsOpen(false)} />
+          </SheetContent>
+        </Sheet>
+      )}
+
+      {/* Desktop: Popup */}
+      {!isMobile && isOpen && <AIAnalystPopup onClose={() => setIsOpen(false)} />}
     </>
   );
 }
