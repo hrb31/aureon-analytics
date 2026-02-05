@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
+import { validateRequest, aiAnalystRequestSchema, sanitizeString } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,15 +83,26 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { messages } = await req.json();
+  // Check rate limit first
+  const rateLimitResult = await checkRateLimit(req, "ai-analyst");
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(corsHeaders, rateLimitResult.error);
+  }
 
-    if (!messages || !Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: "Messages array is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  // Validate input
+  const validation = await validateRequest(req, aiAnalystRequestSchema, corsHeaders);
+  if (!validation.success) {
+    return validation.response;
+  }
+
+  try {
+    const { messages } = validation.data;
+
+    // Sanitize message contents
+    const sanitizedMessages = messages.map((msg) => ({
+      ...msg,
+      content: sanitizeString(msg.content, 10000),
+    }));
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -123,7 +136,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [systemMessage, ...messages],
+        messages: [systemMessage, ...sanitizedMessages],
         stream: true,
       }),
     });

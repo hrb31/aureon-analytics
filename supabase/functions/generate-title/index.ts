@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
+import { validateRequest, generateTitleRequestSchema, sanitizeString } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,15 +13,23 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { message } = await req.json();
+  // Check rate limit first
+  const rateLimitResult = await checkRateLimit(req, "generate-title");
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(corsHeaders, rateLimitResult.error);
+  }
 
-    if (!message) {
-      return new Response(JSON.stringify({ error: "Message is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  // Validate input
+  const validation = await validateRequest(req, generateTitleRequestSchema, corsHeaders);
+  if (!validation.success) {
+    return validation.response;
+  }
+
+  try {
+    const { message } = validation.data;
+    
+    // Sanitize the message before sending to AI
+    const sanitizedMessage = sanitizeString(message, 500);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -41,7 +51,7 @@ serve(async (req) => {
           },
           {
             role: "user",
-            content: message,
+            content: sanitizedMessage,
           },
         ],
         max_tokens: 20,
@@ -52,14 +62,14 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
       // Fall back to truncated message
-      const fallbackTitle = message.slice(0, 25).trim() + (message.length > 25 ? "..." : "");
+      const fallbackTitle = sanitizedMessage.slice(0, 25).trim() + (sanitizedMessage.length > 25 ? "..." : "");
       return new Response(JSON.stringify({ title: fallbackTitle }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await response.json();
-    let title = data.choices?.[0]?.message?.content?.trim() || message.slice(0, 25);
+    let title = data.choices?.[0]?.message?.content?.trim() || sanitizedMessage.slice(0, 25);
     
     // Clean up and truncate
     title = title.replace(/^["']|["']$/g, "").trim();

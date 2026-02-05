@@ -1,5 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Validation schemas
+const conversationTitleSchema = z
+  .string()
+  .min(1, "Title is required")
+  .max(50, "Title must be less than 50 characters")
+  .transform((val) => {
+    // Sanitize: remove HTML tags and dangerous characters
+    return val
+      .replace(/<[^>]*>/g, "")
+      .replace(/[<>]/g, "")
+      .trim()
+      .slice(0, 50);
+  });
+
+const messageContentSchema = z
+  .string()
+  .min(1, "Message cannot be empty")
+  .max(10000, "Message must be less than 10,000 characters");
 
 export interface Conversation {
   id: string;
@@ -55,27 +75,19 @@ export function useCreateConversation() {
 
   return useMutation({
     mutationFn: async (firstMessage: string) => {
-      // Generate AI title
-      let title = firstMessage.slice(0, 25) + (firstMessage.length > 25 ? "..." : "");
+      // Validate and sanitize the first message
+      const validatedMessage = messageContentSchema.parse(firstMessage);
+      
+      // Generate AI title with truncated message for safety
+      let title = validatedMessage.slice(0, 25) + (validatedMessage.length > 25 ? "..." : "");
       
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-title`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            },
-            body: JSON.stringify({ message: firstMessage }),
-          }
-        );
+        const { data, error } = await supabase.functions.invoke("generate-title", {
+          body: { message: validatedMessage.slice(0, 500) }, // Limit message sent for title gen
+        });
         
-        if (response.ok) {
-          const data = await response.json();
-          if (data.title) {
-            title = data.title;
-          }
+        if (!error && data?.title) {
+          title = conversationTitleSchema.parse(data.title);
         }
       } catch (e) {
         console.error("Failed to generate title:", e);
@@ -101,10 +113,12 @@ export function useUpdateConversationTitle() {
 
   return useMutation({
     mutationFn: async ({ id, title }: { id: string; title: string }) => {
-      const trimmedTitle = title.trim().slice(0, 30);
+      // Validate and sanitize the title
+      const sanitizedTitle = conversationTitleSchema.parse(title);
+      
       const { data, error } = await supabase
         .from("ai_conversations")
-        .update({ title: trimmedTitle })
+        .update({ title: sanitizedTitle })
         .eq("id", id)
         .select()
         .single();
@@ -123,6 +137,10 @@ export function useDeleteConversation() {
 
   return useMutation({
     mutationFn: async (conversationId: string) => {
+      // Validate UUID format
+      const uuidSchema = z.string().uuid();
+      uuidSchema.parse(conversationId);
+      
       const { error } = await supabase
         .from("ai_conversations")
         .delete()
@@ -149,12 +167,18 @@ export function useSaveMessage() {
       role: "user" | "assistant";
       content: string;
     }) => {
+      // Validate inputs
+      const uuidSchema = z.string().uuid();
+      uuidSchema.parse(conversationId);
+      
+      const validatedContent = messageContentSchema.parse(content);
+      
       const { data, error } = await supabase
         .from("ai_messages")
         .insert({
           conversation_id: conversationId,
           role,
-          content,
+          content: validatedContent,
         })
         .select()
         .single();
