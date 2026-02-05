@@ -6,6 +6,7 @@ import { ConversationItem } from "./ConversationItem";
 import {
   useConversations,
   useDeleteConversation,
+  useUpdateConversationTitle,
   groupConversationsByDate,
 } from "@/hooks/useConversations";
 
@@ -20,12 +21,17 @@ export function ConversationList({
 }: ConversationListProps) {
   const { data: conversations, isLoading } = useConversations();
   const deleteConversation = useDeleteConversation();
+  const updateTitle = useUpdateConversationTitle();
 
   const handleDelete = (id: string) => {
     deleteConversation.mutate(id);
     if (activeConversationId === id) {
       onSelectConversation(null);
     }
+  };
+
+  const handleRename = (id: string, newTitle: string) => {
+    updateTitle.mutate({ id, title: newTitle });
   };
 
   const handleNewChat = () => {
@@ -65,6 +71,7 @@ export function ConversationList({
               isActive={conv.id === activeConversationId}
               onSelect={onSelectConversation}
               onDelete={handleDelete}
+              onRename={handleRename}
             />
           ))}
         </div>
