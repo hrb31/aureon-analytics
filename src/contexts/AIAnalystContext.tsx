@@ -16,14 +16,27 @@ interface AIAnalystContextType {
   clearMessages: () => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  currentConversationId: string | null;
+  setCurrentConversationId: (id: string | null) => void;
 }
 
 const AIAnalystContext = createContext<AIAnalystContextType | undefined>(undefined);
 
 export function AIAnalystProvider({ children }: { children: ReactNode }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpenState] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+
+  // Clear messages when closing the popup (conversation already saved)
+  const setIsOpen = useCallback((open: boolean) => {
+    setIsOpenState(open);
+    if (!open) {
+      // Clear local state when popup closes - conversation is already saved
+      setMessages([]);
+      setCurrentConversationId(null);
+    }
+  }, []);
 
   const addMessage = useCallback((message: Omit<ChatMessage, "id" | "timestamp">) => {
     const id = crypto.randomUUID();
@@ -44,6 +57,7 @@ export function AIAnalystProvider({ children }: { children: ReactNode }) {
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    setCurrentConversationId(null);
   }, []);
 
   return (
@@ -57,6 +71,8 @@ export function AIAnalystProvider({ children }: { children: ReactNode }) {
         clearMessages,
         isLoading,
         setIsLoading,
+        currentConversationId,
+        setCurrentConversationId,
       }}
     >
       {children}

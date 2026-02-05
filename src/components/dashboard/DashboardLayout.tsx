@@ -1,7 +1,6 @@
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { AIAnalystContainer } from "@/components/ai-analyst/AIAnalystContainer";
-import { AIAnalystProvider } from "@/contexts/AIAnalystContext";
+import { AIAnalystFloatingButton } from "@/components/ai-analyst/AIAnalystFloatingButton";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,20 +16,18 @@ function DashboardHeader() {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <AIAnalystProvider>
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <AppSidebar />
-          <SidebarInset className="flex-1 flex flex-col min-w-0">
-            <DashboardHeader />
-            <main className="flex-1 p-4 md:p-6 overflow-auto">
-              {children}
-            </main>
-          </SidebarInset>
-        </div>
-        {/* Floating AI Analyst - outside main content flow */}
-        <AIAnalystContainer />
-      </SidebarProvider>
-    </AIAnalystProvider>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <SidebarInset className="flex-1 flex flex-col min-w-0">
+          <DashboardHeader />
+          <main className="flex-1 p-4 md:p-6 overflow-auto">
+            {children}
+          </main>
+        </SidebarInset>
+      </div>
+      {/* Floating AI Analyst - outside main content flow */}
+      <AIAnalystFloatingButton />
+    </SidebarProvider>
   );
 }

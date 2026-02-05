@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useAIAnalystContext } from "@/contexts/AIAnalystContext";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const AI_ANALYST_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-analyst`;
 
@@ -14,26 +15,57 @@ export function useAIAnalyst() {
     setIsLoading,
     isOpen,
     setIsOpen,
+    currentConversationId,
+    setCurrentConversationId,
   } = useAIAnalystContext();
 
   const sendMessage = useCallback(
     async (userMessage: string) => {
       if (!userMessage.trim() || isLoading) return;
 
-      // Add user message
-      addMessage({ role: "user", content: userMessage.trim() });
+      const trimmedMessage = userMessage.trim();
+
+      // Add user message to UI
+      addMessage({ role: "user", content: trimmedMessage });
 
       // Create placeholder for assistant message
       const assistantId = addMessage({ role: "assistant", content: "" });
 
       setIsLoading(true);
       let assistantContent = "";
+      let conversationId = currentConversationId;
 
       try {
+        // Create conversation if this is the first message
+        if (!conversationId) {
+          const title = trimmedMessage.slice(0, 50) + (trimmedMessage.length > 50 ? "..." : "");
+          const { data: conv, error: convError } = await supabase
+            .from("ai_conversations")
+            .insert({ title })
+            .select()
+            .single();
+
+          if (convError) {
+            console.error("Failed to create conversation:", convError);
+          } else {
+            conversationId = conv.id;
+            setCurrentConversationId(conv.id);
+          }
+        }
+
+        // Save user message to DB
+        if (conversationId) {
+          await supabase.from("ai_messages").insert({
+            conversation_id: conversationId,
+            role: "user",
+            content: trimmedMessage,
+          });
+        }
+
         // Build messages array for API (exclude the empty assistant message we just added)
         const apiMessages = [
           ...messages.map((m) => ({ role: m.role, content: m.content })),
-          { role: "user" as const, content: userMessage.trim() },
+          { role: "user" as const, content: trimmedMessage },
         ];
 
         const response = await fetch(AI_ANALYST_URL, {
@@ -132,15 +164,31 @@ export function useAIAnalyst() {
             }
           }
         }
+
+        // Save assistant message to DB
+        if (conversationId && assistantContent) {
+          await supabase.from("ai_messages").insert({
+            conversation_id: conversationId,
+            role: "assistant",
+            content: assistantContent,
+          });
+        }
       } catch (error) {
         console.error("AI Analyst error:", error);
         
         // Update the assistant message with error
         if (!assistantContent) {
-          updateMessage(
-            assistantId,
-            "I apologize, but I encountered an error processing your request. Please try again."
-          );
+          const errorMessage = "I apologize, but I encountered an error processing your request. Please try again.";
+          updateMessage(assistantId, errorMessage);
+
+          // Save error message to DB
+          if (conversationId) {
+            await supabase.from("ai_messages").insert({
+              conversation_id: conversationId,
+              role: "assistant",
+              content: errorMessage,
+            });
+          }
         }
         
         if (!(error instanceof Error) || 
@@ -155,7 +203,7 @@ export function useAIAnalyst() {
         setIsLoading(false);
       }
     },
-    [messages, addMessage, updateMessage, setIsLoading, isLoading]
+    [messages, addMessage, updateMessage, setIsLoading, isLoading, currentConversationId, setCurrentConversationId]
   );
 
   return {
