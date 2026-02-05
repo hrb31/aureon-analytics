@@ -14,7 +14,7 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 p-4",
+        "flex gap-3 p-3 md:p-4",
         isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
@@ -31,25 +31,25 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
 
       <div
         className={cn(
-          "flex-1 space-y-2 overflow-hidden",
+          "flex-1 space-y-2 overflow-hidden min-w-0",
           isUser ? "text-right" : "text-left"
         )}
       >
         <div
           className={cn(
-            "inline-block rounded-lg px-4 py-2 text-sm",
+            "inline-block rounded-lg px-3 md:px-4 py-2 text-sm max-w-full",
             isUser
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-foreground"
           )}
         >
           {isUser ? (
-            <p>{message.content}</p>
+            <p className="break-words">{message.content}</p>
           ) : message.content ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+            <div className="prose prose-sm dark:prose-invert max-w-none break-words [overflow-wrap:anywhere]">
               <ReactMarkdown
                 components={{
-                  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                  p: ({ children }) => <p className="mb-2 last:mb-0 break-words">{children}</p>,
                   ul: ({ children }) => <ul className="mb-2 ml-4 list-disc">{children}</ul>,
                   ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal">{children}</ol>,
                   li: ({ children }) => <li className="mb-1">{children}</li>,
@@ -57,6 +57,8 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
                   h1: ({ children }) => <h3 className="text-base font-semibold mb-2">{children}</h3>,
                   h2: ({ children }) => <h4 className="text-sm font-semibold mb-2">{children}</h4>,
                   h3: ({ children }) => <h5 className="text-sm font-medium mb-1">{children}</h5>,
+                  code: ({ children }) => <code className="bg-background/50 px-1 py-0.5 rounded text-xs break-all">{children}</code>,
+                  pre: ({ children }) => <pre className="bg-background/50 p-2 rounded overflow-x-auto text-xs">{children}</pre>,
                 }}
               >
                 {message.content}
