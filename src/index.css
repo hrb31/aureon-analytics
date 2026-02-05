@@ -148,6 +148,11 @@ All colors MUST be HSL.
   .card-hover {
     @apply transition-all duration-200 hover:shadow-md hover:border-border/80;
   }
+
+  /* Safe area padding for notched devices */
+  .pb-safe {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
 }
 
 /* Custom animations */

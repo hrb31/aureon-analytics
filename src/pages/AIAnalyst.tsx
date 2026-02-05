@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Sparkles } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Send, Sparkles, History } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { ConversationList } from "@/components/ai-analyst/ConversationList";
 import { ChatMessage } from "@/components/ai-analyst/ChatMessage";
@@ -22,6 +23,7 @@ export default function AIAnalyst() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -53,6 +55,11 @@ export default function AIAnalyst() {
     setStreamingContent("");
     setLocalMessages([]);
   }, [activeConversationId]);
+
+  const handleSelectConversation = (id: string) => {
+    setActiveConversationId(id);
+    setMobileDrawerOpen(false);
+  };
 
   const sendMessage = useCallback(
     async (userMessage: string) => {
@@ -283,9 +290,9 @@ export default function AIAnalyst() {
 
   return (
     <DashboardLayout>
-      <div className="flex h-[calc(100vh-2rem)] gap-0 -m-6">
-        {/* Sidebar */}
-        <div className="w-72 border-r border-border shrink-0">
+      <div className="flex h-[calc(100vh-3.5rem)] gap-0 -m-4 md:-m-6">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block w-72 border-r border-border shrink-0">
           <ConversationList
             activeConversationId={activeConversationId}
             onSelectConversation={setActiveConversationId}
@@ -293,7 +300,25 @@ export default function AIAnalyst() {
         </div>
 
         {/* Main chat area */}
-        <div className="flex-1 flex flex-col bg-background">
+        <div className="flex-1 flex flex-col bg-background min-w-0">
+          {/* Mobile Header with History Button */}
+          <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
+            <h1 className="text-sm font-medium">AI Analyst</h1>
+            <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <History className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 p-0">
+                <ConversationList
+                  activeConversationId={activeConversationId}
+                  onSelectConversation={handleSelectConversation}
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
+
           {/* Messages */}
           <ScrollArea className="flex-1" ref={scrollRef}>
             {displayMessages.length === 0 && !activeConversationId ? (
@@ -315,7 +340,7 @@ export default function AIAnalyst() {
               <SuggestedPrompts onSelect={handlePromptSelect} disabled={isLoading} />
             ) : (
               <div className="divide-y divide-border">
-                {displayMessages.map((message, index) => (
+                {displayMessages.map((message) => (
                   <ChatMessage
                     key={message.id}
                     message={message}
@@ -330,7 +355,7 @@ export default function AIAnalyst() {
           </ScrollArea>
 
           {/* Input */}
-          <form onSubmit={handleSubmit} className="shrink-0 p-4 border-t border-border bg-muted/30">
+          <form onSubmit={handleSubmit} className="shrink-0 p-3 md:p-4 border-t border-border bg-muted/30">
             <div className="max-w-3xl mx-auto">
               <div className="flex items-end gap-2">
                 <div className="flex-1 relative">
@@ -354,7 +379,7 @@ export default function AIAnalyst() {
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2 text-center">
+              <p className="text-xs text-muted-foreground mt-2 text-center hidden sm:block">
                 Press Enter to send, Shift+Enter for new line
               </p>
             </div>
