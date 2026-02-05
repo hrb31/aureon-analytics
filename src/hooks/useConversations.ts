@@ -54,10 +54,58 @@ export function useCreateConversation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (title: string) => {
+    mutationFn: async (firstMessage: string) => {
+      // Generate AI title
+      let title = firstMessage.slice(0, 25) + (firstMessage.length > 25 ? "..." : "");
+      
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-title`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ message: firstMessage }),
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.title) {
+            title = data.title;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to generate title:", e);
+      }
+
       const { data, error } = await supabase
         .from("ai_conversations")
-        .insert({ title: title.slice(0, 50) + (title.length > 50 ? "..." : "") })
+        .insert({ title })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Conversation;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ai-conversations"] });
+    },
+  });
+}
+
+export function useUpdateConversationTitle() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const trimmedTitle = title.trim().slice(0, 30);
+      const { data, error } = await supabase
+        .from("ai_conversations")
+        .update({ title: trimmedTitle })
+        .eq("id", id)
         .select()
         .single();
 
