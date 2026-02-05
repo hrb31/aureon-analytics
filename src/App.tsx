@@ -5,11 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AIAnalystProvider } from "@/contexts/AIAnalystContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Revenue from "./pages/Revenue";
 import Acquisition from "./pages/Acquisition";
 import Customers from "./pages/Customers";
+import AIAnalyst from "./pages/AIAnalyst";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -87,6 +89,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/dashboard/ai-analyst"
+        element={
+          <ProtectedRoute>
+            <AIAnalyst />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/login"
         element={
           <PublicRoute>
@@ -107,7 +117,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <AppRoutes />
+            <AIAnalystProvider>
+              <AppRoutes />
+            </AIAnalystProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

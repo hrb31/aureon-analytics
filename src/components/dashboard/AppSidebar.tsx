@@ -3,7 +3,6 @@ import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useAIAnalystContext } from "@/contexts/AIAnalystContext";
 import logo from "@/assets/logo.png";
 
 import {
@@ -38,7 +37,6 @@ export function AppSidebar() {
   const location = useLocation();
   const { logout } = useAuth();
   const currentPath = location.pathname;
-  const { isOpen, setIsOpen } = useAIAnalystContext();
 
   const isActive = (path: string) => {
     if (path === "/dashboard") {
@@ -95,19 +93,20 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={isOpen}
+                  asChild
+                  isActive={isActive("/dashboard/ai-analyst")}
                   tooltip="AI Analyst"
-                  onClick={() => setIsOpen(!isOpen)}
-                  className="cursor-pointer"
                 >
-                  <div className="flex items-center gap-2 w-full">
-                    <div className="flex h-4 w-4 items-center justify-center">
-                      <Sparkles className="h-4 w-4 text-chart-1" />
-                    </div>
+                  <NavLink
+                    to="/dashboard/ai-analyst"
+                    className="flex items-center gap-2"
+                    activeClassName="bg-accent text-accent-foreground"
+                  >
+                    <Sparkles className="h-4 w-4 text-chart-1" />
                     <span className="bg-gradient-to-r from-chart-1 to-chart-3 bg-clip-text text-transparent font-medium">
                       AI Analyst
                     </span>
-                  </div>
+                  </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
