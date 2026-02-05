@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
+import { validateRequest, passwordSchema } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,18 +14,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { password } = await req.json();
+  // Check rate limit first
+  const rateLimitResult = await checkRateLimit(req, "verify-password");
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(corsHeaders, rateLimitResult.error);
+  }
 
-    if (!password) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Password required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+  // Validate input
+  const validation = await validateRequest(req, passwordSchema, corsHeaders);
+  if (!validation.success) {
+    return validation.response;
+  }
+
+  try {
+    const { password } = validation.data;
 
     const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD");
 
